@@ -1,0 +1,7 @@
+{
+  "expo": {
+    "name": "GestionAss",
+    "slug": "gestion-ass",
+    "plugins": ["expo-router"]
+  }
+}
