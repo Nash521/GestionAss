@@ -44,6 +44,26 @@ async function encryptionKey(secret: string): Promise<CryptoKey> {
   );
 }
 
+async function sign(value: string, secret: string): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
+}
+
+function timingSafeEqual(left: Uint8Array, right: Uint8Array): boolean {
+  let difference = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    difference |= (left[index] ?? 0) ^ (right[index] ?? 0);
+  }
+  return difference === 0;
+}
+
 function isPayload(value: unknown): value is RegistrationTokenPayload {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const payload = value as Record<string, unknown>;
@@ -67,7 +87,11 @@ export async function issueRegistrationToken(
     await encryptionKey(secret),
     plaintext,
   ));
-  return `${encodeBase64Url(iv)}.${encodeBase64Url(ciphertext)}`;
+  const encrypted = new Uint8Array(iv.length + ciphertext.length);
+  encrypted.set(iv);
+  encrypted.set(ciphertext, iv.length);
+  const encodedEncrypted = encodeBase64Url(encrypted);
+  return `${encodedEncrypted}.${encodeBase64Url(await sign(encodedEncrypted, secret))}`;
 }
 
 export async function verifyRegistrationToken(
@@ -77,12 +101,17 @@ export async function verifyRegistrationToken(
   if (token.length > MAX_REGISTRATION_TOKEN_LENGTH) return null;
   const segments = token.split(".");
   if (segments.length !== 2) return null;
-  const [encodedIv, encodedCiphertext] = segments;
-  if (!encodedIv || !encodedCiphertext) return null;
+  const [encodedEncrypted, encodedSignature] = segments;
+  if (!encodedEncrypted || !encodedSignature) return null;
 
-  const iv = decodeBase64Url(encodedIv);
-  const ciphertext = decodeBase64Url(encodedCiphertext);
-  if (iv === null || ciphertext === null || iv.length !== AES_GCM_IV_LENGTH) return null;
+  const signature = decodeBase64Url(encodedSignature);
+  if (signature === null || signature.length !== 32) return null;
+  if (!timingSafeEqual(await sign(encodedEncrypted, secret), signature)) return null;
+
+  const encrypted = decodeBase64Url(encodedEncrypted);
+  if (encrypted === null || encrypted.length <= AES_GCM_IV_LENGTH) return null;
+  const iv = encrypted.slice(0, AES_GCM_IV_LENGTH);
+  const ciphertext = encrypted.slice(AES_GCM_IV_LENGTH);
 
   try {
     const payloadBytes = new Uint8Array(await crypto.subtle.decrypt(

@@ -36,9 +36,15 @@ Deno.test("does not expose registration payload values to the token holder", asy
 
 Deno.test("rejects an altered registration token", async () => {
   const token = await issueRegistrationToken(input, secret);
+  const [encryptedBody, mac] = token.split(".");
+  if (!encryptedBody || !mac) throw new Error("token must contain an encrypted body and MAC");
+  const macBase64 = mac.replaceAll("-", "+").replaceAll("_", "/");
+  const macBytes = atob(macBase64 + "=".repeat((4 - (macBase64.length % 4)) % 4));
+  if (macBytes.length !== 32) throw new Error("token must carry a SHA-256 HMAC");
+  const alteredMac = `${mac.slice(0, -1)}${mac.endsWith("A") ? "B" : "A"}`;
 
-  if (await verifyRegistrationToken(`${token}x`, secret) !== null) {
-    throw new Error("altered token accepted");
+  if (await verifyRegistrationToken(`${encryptedBody}.${alteredMac}`, secret) !== null) {
+    throw new Error("altered MAC accepted");
   }
 });
 
