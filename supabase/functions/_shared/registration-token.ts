@@ -1,4 +1,6 @@
 export const REGISTRATION_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
+const MAX_REGISTRATION_TOKEN_LENGTH = 4_096;
+const AES_GCM_IV_LENGTH = 12;
 
 export type RegistrationTokenPurpose = "invite" | "otp";
 export type RegistrationTokenPayload = {
@@ -31,24 +33,15 @@ function decodeBase64Url(value: string): Uint8Array | null {
   }
 }
 
-async function sign(value: string, secret: string): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey(
+async function encryptionKey(secret: string): Promise<CryptoKey> {
+  const keyMaterial = await crypto.subtle.digest("SHA-256", encoder.encode(secret));
+  return crypto.subtle.importKey(
     "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM" },
     false,
-    ["sign"],
+    ["encrypt", "decrypt"],
   );
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
-}
-
-function timingSafeEqual(left: Uint8Array, right: Uint8Array): boolean {
-  let difference = left.length ^ right.length;
-  const length = Math.max(left.length, right.length);
-  for (let index = 0; index < length; index += 1) {
-    difference |= (left[index] ?? 0) ^ (right[index] ?? 0);
-  }
-  return difference === 0;
 }
 
 function isPayload(value: unknown): value is RegistrationTokenPayload {
@@ -67,25 +60,36 @@ export async function issueRegistrationToken(
   secret: string,
   now = Date.now(),
 ): Promise<string> {
-  const payload = encodeBase64Url(JSON.stringify({ ...input, expiresAt: now + REGISTRATION_TOKEN_EXPIRY_MS }));
-  return `${payload}.${encodeBase64Url(await sign(payload, secret))}`;
+  const iv = crypto.getRandomValues(new Uint8Array(AES_GCM_IV_LENGTH));
+  const plaintext = encoder.encode(JSON.stringify({ ...input, expiresAt: now + REGISTRATION_TOKEN_EXPIRY_MS }));
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv as unknown as BufferSource },
+    await encryptionKey(secret),
+    plaintext,
+  ));
+  return `${encodeBase64Url(iv)}.${encodeBase64Url(ciphertext)}`;
 }
 
 export async function verifyRegistrationToken(
   token: string,
   secret: string,
 ): Promise<RegistrationTokenPayload | null> {
+  if (token.length > MAX_REGISTRATION_TOKEN_LENGTH) return null;
   const segments = token.split(".");
   if (segments.length !== 2) return null;
-  const [encodedPayload, encodedSignature] = segments;
-  if (!encodedPayload || !encodedSignature) return null;
+  const [encodedIv, encodedCiphertext] = segments;
+  if (!encodedIv || !encodedCiphertext) return null;
 
-  const signature = decodeBase64Url(encodedSignature);
-  if (signature === null || !timingSafeEqual(await sign(encodedPayload, secret), signature)) return null;
+  const iv = decodeBase64Url(encodedIv);
+  const ciphertext = decodeBase64Url(encodedCiphertext);
+  if (iv === null || ciphertext === null || iv.length !== AES_GCM_IV_LENGTH) return null;
 
-  const payloadBytes = decodeBase64Url(encodedPayload);
-  if (payloadBytes === null) return null;
   try {
+    const payloadBytes = new Uint8Array(await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv as unknown as BufferSource },
+      await encryptionKey(secret),
+      ciphertext as unknown as BufferSource,
+    ));
     const payload = JSON.parse(decoder.decode(payloadBytes));
     return isPayload(payload) && payload.expiresAt > Date.now() ? payload : null;
   } catch {
