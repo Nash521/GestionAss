@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(11);
+select plan(13);
 
 select has_table('public', 'organization_invitations', 'organization invitations table exists');
 select has_function(
@@ -11,6 +11,22 @@ select has_function(
   'consume_registration_invitation',
   array['uuid'],
   'atomic invitation consumption function exists'
+);
+select ok(
+  not has_table_privilege(
+    'anon',
+    'public.organization_invitations',
+    'select, insert, update, delete, truncate, references, trigger'
+  ),
+  'anon has no direct invitation table privileges'
+);
+select ok(
+  not has_table_privilege(
+    'authenticated',
+    'public.organization_invitations',
+    'select, insert, update, delete, truncate, references, trigger'
+  ),
+  'authenticated has no direct invitation table privileges'
 );
 
 insert into public.organizations (id, name)

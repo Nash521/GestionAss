@@ -40,5 +40,7 @@ end;
 $$;
 
 revoke all on table public.organization_invitations from public;
+revoke all on table public.organization_invitations from anon;
+revoke all on table public.organization_invitations from authenticated;
 revoke all on function public.consume_registration_invitation(uuid) from public;
 grant execute on function public.consume_registration_invitation(uuid) to service_role;
