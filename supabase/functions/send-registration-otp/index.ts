@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createOtp, hashToDatabase, isResendAllowed, OTP_EXPIRY_MS } from "../_shared/otp.ts";
+import { verifyRegistrationToken } from "../_shared/registration-token.ts";
 import { createSmsProvider } from "../_shared/sms.ts";
 
 const PURPOSE = "registration";
@@ -10,18 +11,24 @@ function response(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-Deno.serve(async (request) => {
+Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   if (request.method !== "POST") return response({ error: "Method not allowed" }, 405);
 
   let phone: unknown;
+  let invitationToken: unknown;
   try {
-    ({ phone } = await request.json());
+    ({ phone, invitationToken } = await request.json());
   } catch {
     return response({ error: "Invalid request" }, 400);
   }
   if (typeof phone !== "string" || !PHONE_PATTERN.test(phone)) return response({ error: "Invalid request" }, 400);
 
+  const secret = Deno.env.get("REGISTRATION_TOKEN_SECRET")?.trim();
+  if (!secret) return response({ error: "Service unavailable" }, 503);
+  if (typeof invitationToken !== "string") return response({ error: "Unauthorized" }, 401);
+  const invitation = await verifyRegistrationToken(invitationToken, secret);
+  if (!invitation || invitation.purpose !== "invite" || invitation.phone !== phone) return response({ error: "Unauthorized" }, 401);
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);

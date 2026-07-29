@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hashFromDatabase, isExpired, OTP_ATTEMPT_LIMIT, safeVerifyOtp } from "../_shared/otp.ts";
+import { issueRegistrationToken, verifyRegistrationToken } from "../_shared/registration-token.ts";
 
 const PURPOSE = "registration";
 const PHONE_PATTERN = /^\+2250[157]\d{8}$/;
@@ -11,19 +12,25 @@ function response(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-Deno.serve(async (request) => {
+Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   if (request.method !== "POST") return response({ error: "Method not allowed" }, 405);
 
   let phone: unknown;
   let code: unknown;
+  let invitationToken: unknown;
   try {
-    ({ phone, code } = await request.json());
+    ({ phone, code, invitationToken } = await request.json());
   } catch {
     return invalidOtp();
   }
   if (typeof phone !== "string" || typeof code !== "string" || !PHONE_PATTERN.test(phone) || !CODE_PATTERN.test(code)) return invalidOtp();
 
+  const secret = Deno.env.get("REGISTRATION_TOKEN_SECRET")?.trim();
+  if (!secret) return response({ error: "Service unavailable" }, 503);
+  if (typeof invitationToken !== "string") return response({ error: "Unauthorized" }, 401);
+  const invitation = await verifyRegistrationToken(invitationToken, secret);
+  if (!invitation || invitation.purpose !== "invite" || invitation.phone !== phone) return response({ error: "Unauthorized" }, 401);
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
@@ -58,5 +65,12 @@ Deno.serve(async (request) => {
     .maybeSingle();
   if (consumeError) return response({ error: "Service unavailable" }, 503);
   if (!consumed) return invalidOtp();
-  return response({ verified: true });
+  return response({
+    verified: true,
+    otpToken: await issueRegistrationToken({
+      invitationId: invitation.invitationId,
+      phone,
+      purpose: "otp",
+    }, secret),
+  });
 });
