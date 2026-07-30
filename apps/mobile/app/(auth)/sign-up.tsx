@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   eye: { padding: 10 },
   requirements: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
   requirement: { width: "50%", flexDirection: "row", alignItems: "center", marginTop: 3 },
-  requirementLeft: { marginLeft: 16 },
+  requirementLeft: { width: "42%", marginLeft: "8%" },
   requirementLabel: { marginLeft: 4, color: "#8493A1", fontSize: 11 },
   requirementLabelValid: { color: "#007F76" },
   error: { marginBottom: 6, color: "#B3261E", fontSize: 12, textAlign: "center" },
