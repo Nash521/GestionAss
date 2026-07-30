@@ -41,7 +41,9 @@ Deno.test("rejects an altered registration token", async () => {
   const macBase64 = mac.replaceAll("-", "+").replaceAll("_", "/");
   const macBytes = atob(macBase64 + "=".repeat((4 - (macBase64.length % 4)) % 4));
   if (macBytes.length !== 32) throw new Error("token must carry a SHA-256 HMAC");
-  const alteredMac = `${mac.slice(0, -1)}${mac.endsWith("A") ? "B" : "A"}`;
+  // Mutate a fully significant Base64URL character. Changing a final character can
+  // leave decoded bytes untouched when it contains only unused padding bits.
+  const alteredMac = `${mac.startsWith("A") ? "B" : "A"}${mac.slice(1)}`;
 
   if (await verifyRegistrationToken(`${encryptedBody}.${alteredMac}`, secret) !== null) {
     throw new Error("altered MAC accepted");

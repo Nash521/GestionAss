@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(38);
 
 select has_table('public', 'organizations', 'organizations is available for authentication data');
 select has_table('public', 'users', 'application users table exists');
@@ -60,12 +60,16 @@ select is(
 );
 
 select has_function('public', 'issue_registration_otp', array['text', 'text', 'bytea'], 'atomic OTP sending function exists');
+select has_function('public', 'release_registration_otp', array['text', 'text', 'bytea'], 'failed OTP send release function exists');
 select ok(not has_function_privilege('anon', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'anon cannot execute OTP verification RPC');
 select ok(not has_function_privilege('authenticated', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'authenticated cannot execute OTP verification RPC');
 select ok(has_function_privilege('service_role', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'service role can execute OTP verification RPC');
 select ok(not has_function_privilege('anon', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'anon cannot execute OTP sending RPC');
 select ok(not has_function_privilege('authenticated', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'authenticated cannot execute OTP sending RPC');
 select ok(has_function_privilege('service_role', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'service role can execute OTP sending RPC');
+select ok(not has_function_privilege('anon', 'public.release_registration_otp(text, text, bytea)', 'execute'), 'anon cannot execute OTP release RPC');
+select ok(not has_function_privilege('authenticated', 'public.release_registration_otp(text, text, bytea)', 'execute'), 'authenticated cannot execute OTP release RPC');
+select ok(has_function_privilege('service_role', 'public.release_registration_otp(text, text, bytea)', 'execute'), 'service role can execute OTP release RPC');
 
 insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_at)
 values ('+2250701020315', 'registration', decode(repeat('08', 32), 'hex'), now() + interval '10 minutes', now() - interval '10 minutes');
@@ -74,6 +78,15 @@ select ok((select consumed_at is not null from public.auth_otps where phone = '+
 
 select ok(public.issue_registration_otp('+2250701020316', 'registration', decode(repeat('09', 32), 'hex')), 'first concurrent send contender reserves the OTP slot');
 select ok(not public.issue_registration_otp('+2250701020316', 'registration', decode(repeat('0a', 32), 'hex')), 'second send contender is rejected during cooldown');
+
+insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_at)
+values ('+2250701020317', 'registration', decode(repeat('0b', 32), 'hex'), now() + interval '10 minutes', now());
+select ok(public.release_registration_otp('+2250701020317', 'registration', decode(repeat('0b', 32), 'hex')), 'a failed SMS send releases its exact OTP reservation');
+select ok(not exists (select 1 from public.auth_otps where phone = '+2250701020317' and purpose = 'registration'), 'released OTP reservation no longer blocks an immediate retry');
+insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_at)
+values ('+2250701020317', 'registration', decode(repeat('0c', 32), 'hex'), now() + interval '10 minutes', now());
+select ok(not public.release_registration_otp('+2250701020317', 'registration', decode(repeat('0b', 32), 'hex')), 'a stale failed send cannot release a newer OTP reservation');
+select ok(exists (select 1 from public.auth_otps where phone = '+2250701020317' and purpose = 'registration' and code_hash = decode(repeat('0c', 32), 'hex')), 'the newer OTP reservation remains intact');
 
 
 insert into public.users (id, organization_id, role, is_active)

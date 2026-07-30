@@ -39,9 +39,10 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
   const otp = await createOtp();
+  const codeHash = hashToDatabase(otp.codeHash);
   const { data: reserved, error: reserveError } = await database.rpc(
     "issue_registration_otp",
-    { p_phone: phone, p_purpose: PURPOSE, p_code_hash: hashToDatabase(otp.codeHash) },
+    { p_phone: phone, p_purpose: PURPOSE, p_code_hash: codeHash },
   );
   if (reserveError) return response({ error: "Service unavailable" }, 503);
   if (reserved !== true) return response({ error: "Please wait before requesting another code" }, 429);
@@ -49,6 +50,11 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     await createSmsProvider().send({ to: phone, body: `Votre code de verification GestionAss est : ${otp.code}` });
   } catch (error) {
     console.error("OTP SMS delivery failed", error instanceof Error ? error.message : "unknown error");
+    const { error: releaseError } = await database.rpc(
+      "release_registration_otp",
+      { p_phone: phone, p_purpose: PURPOSE, p_code_hash: codeHash },
+    );
+    if (releaseError) console.error("OTP reservation release failed", releaseError.message);
     return response({ error: "Service unavailable" }, 503);
   }
 
