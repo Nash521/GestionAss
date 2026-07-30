@@ -14,6 +14,12 @@ async function waitForServer(): Promise<void> {
   throw new Error("validate-registration-invitation did not start");
 }
 
+function assertCors(response: Response): void {
+  if (response.headers.get("access-control-allow-origin") !== "*") throw new Error("missing Allow-Origin");
+  if (response.headers.get("access-control-allow-methods") !== "POST, OPTIONS") throw new Error("missing Allow-Methods");
+  if (response.headers.get("access-control-allow-headers") !== "content-type, authorization, apikey") throw new Error("missing Allow-Headers");
+}
+
 Deno.test("validate-registration-invitation rejects an oversized code before hashing", async () => {
   const process = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-net", "--allow-env", functionFile],
@@ -31,6 +37,7 @@ Deno.test("validate-registration-invitation rejects an oversized code before has
         invitationCode: "A".repeat(129),
       }),
     });
+    assertCors(response);
     if (response.status !== 400) {
       throw new Error(`expected 400, received ${response.status}`);
     }

@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(30);
 
 select has_table('public', 'organizations', 'organizations is available for authentication data');
 select has_table('public', 'users', 'application users table exists');
@@ -58,6 +58,23 @@ select is(
   5::smallint,
   'OTP failures never increment attempts beyond the limit'
 );
+
+select has_function('public', 'issue_registration_otp', array['text', 'text', 'bytea'], 'atomic OTP sending function exists');
+select ok(not has_function_privilege('anon', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'anon cannot execute OTP verification RPC');
+select ok(not has_function_privilege('authenticated', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'authenticated cannot execute OTP verification RPC');
+select ok(has_function_privilege('service_role', 'public.verify_and_consume_otp(text, text, bytea)', 'execute'), 'service role can execute OTP verification RPC');
+select ok(not has_function_privilege('anon', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'anon cannot execute OTP sending RPC');
+select ok(not has_function_privilege('authenticated', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'authenticated cannot execute OTP sending RPC');
+select ok(has_function_privilege('service_role', 'public.issue_registration_otp(text, text, bytea)', 'execute'), 'service role can execute OTP sending RPC');
+
+insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_at)
+values ('+2250701020315', 'registration', decode(repeat('08', 32), 'hex'), now() + interval '10 minutes', now() - interval '10 minutes');
+select ok(public.verify_and_consume_otp('+2250701020315', 'registration', decode(repeat('08', 32), 'hex')), 'the matching OTP is consumed successfully');
+select ok((select consumed_at is not null from public.auth_otps where phone = '+2250701020315' and purpose = 'registration'), 'successful OTP verification marks the OTP consumed');
+
+select ok(public.issue_registration_otp('+2250701020316', 'registration', decode(repeat('09', 32), 'hex')), 'first concurrent send contender reserves the OTP slot');
+select ok(not public.issue_registration_otp('+2250701020316', 'registration', decode(repeat('0a', 32), 'hex')), 'second send contender is rejected during cooldown');
+
 
 insert into public.users (id, organization_id, role, is_active)
 values

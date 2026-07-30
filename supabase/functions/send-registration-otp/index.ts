@@ -1,11 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createOtp, hashToDatabase, isResendAllowed, OTP_EXPIRY_MS } from "../_shared/otp.ts";
+import { createOtp, hashToDatabase } from "../_shared/otp.ts";
 import { verifyRegistrationToken } from "../_shared/registration-token.ts";
 import { createSmsProvider } from "../_shared/sms.ts";
 
 const PURPOSE = "registration";
 const PHONE_PATTERN = /^\+2250[157]\d{8}$/;
-const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+const headers = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
+};
 
 function response(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers });
@@ -33,19 +38,13 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const now = new Date();
-  const { data: existing, error: lookupError } = await database
-    .from("auth_otps")
-    .select("last_sent_at")
-    .eq("phone", phone)
-    .eq("purpose", PURPOSE)
-    .maybeSingle();
-  if (lookupError) return response({ error: "Service unavailable" }, 503);
-  if (existing && !isResendAllowed(existing.last_sent_at, now)) {
-    return response({ error: "Please wait before requesting another code" }, 429);
-  }
-
   const otp = await createOtp();
+  const { data: reserved, error: reserveError } = await database.rpc(
+    "issue_registration_otp",
+    { p_phone: phone, p_purpose: PURPOSE, p_code_hash: hashToDatabase(otp.codeHash) },
+  );
+  if (reserveError) return response({ error: "Service unavailable" }, 503);
+  if (reserved !== true) return response({ error: "Please wait before requesting another code" }, 429);
   try {
     await createSmsProvider().send({ to: phone, body: `Votre code de verification GestionAss est : ${otp.code}` });
   } catch (error) {
@@ -53,15 +52,5 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     return response({ error: "Service unavailable" }, 503);
   }
 
-  const { error: writeError } = await database.from("auth_otps").upsert({
-    phone,
-    purpose: PURPOSE,
-    code_hash: hashToDatabase(otp.codeHash),
-    expires_at: new Date(now.getTime() + OTP_EXPIRY_MS).toISOString(),
-    attempts: 0,
-    last_sent_at: now.toISOString(),
-    consumed_at: null,
-  }, { onConflict: "phone,purpose" });
-  if (writeError) return response({ error: "Service unavailable" }, 503);
   return response({ sent: true });
 });

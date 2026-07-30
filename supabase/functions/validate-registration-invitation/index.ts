@@ -7,6 +7,8 @@ const INVITATION_CODE_PATTERN = /^[A-Za-z0-9-]{1,128}$/;
 const headers = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
 };
 
 function response(body: Record<string, unknown>, status = 200): Response {

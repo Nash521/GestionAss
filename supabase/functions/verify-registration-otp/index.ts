@@ -11,6 +11,8 @@ const CODE_PATTERN = /^\d{6}$/;
 const headers = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
 };
 const invalidOtp = () =>
   new Response(JSON.stringify({ error: "Invalid or expired code" }), {

@@ -17,6 +17,12 @@ async function waitForServer(): Promise<void> {
   throw new Error("send-registration-otp did not start");
 }
 
+function assertCors(response: Response): void {
+  if (response.headers.get("access-control-allow-origin") !== "*") throw new Error("missing Allow-Origin");
+  if (response.headers.get("access-control-allow-methods") !== "POST, OPTIONS") throw new Error("missing Allow-Methods");
+  if (response.headers.get("access-control-allow-headers") !== "content-type, authorization, apikey") throw new Error("missing Allow-Headers");
+}
+
 Deno.test("send-registration-otp rejects requests without invitation evidence", async () => {
   const process = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-net", "--allow-env", functionFile],
@@ -31,6 +37,7 @@ Deno.test("send-registration-otp rejects requests without invitation evidence", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: "+2250701020304" }),
     });
+    assertCors(response);
     if (response.status !== 401) throw new Error(`expected 401, received ${response.status}`);
   } finally {
     process.kill("SIGTERM");
