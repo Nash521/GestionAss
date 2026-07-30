@@ -19,6 +19,7 @@ begin
   where phone = p_phone
     and purpose = p_purpose
     and code_hash = p_code_hash
+    and consumed_at is null
   returning true into released;
 
   return coalesce(released, false);

@@ -1,6 +1,6 @@
 begin;
 
-select plan(38);
+select plan(40);
 
 select has_table('public', 'organizations', 'organizations is available for authentication data');
 select has_table('public', 'users', 'application users table exists');
@@ -87,6 +87,11 @@ insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_a
 values ('+2250701020317', 'registration', decode(repeat('0c', 32), 'hex'), now() + interval '10 minutes', now());
 select ok(not public.release_registration_otp('+2250701020317', 'registration', decode(repeat('0b', 32), 'hex')), 'a stale failed send cannot release a newer OTP reservation');
 select ok(exists (select 1 from public.auth_otps where phone = '+2250701020317' and purpose = 'registration' and code_hash = decode(repeat('0c', 32), 'hex')), 'the newer OTP reservation remains intact');
+
+insert into public.auth_otps (phone, purpose, code_hash, expires_at, last_sent_at, consumed_at)
+values ('+2250701020318', 'registration', decode(repeat('0d', 32), 'hex'), now() + interval '10 minutes', now(), now());
+select ok(not public.release_registration_otp('+2250701020318', 'registration', decode(repeat('0d', 32), 'hex')), 'a failed SMS compensation cannot release an OTP that was already consumed');
+select ok(exists (select 1 from public.auth_otps where phone = '+2250701020318' and purpose = 'registration' and code_hash = decode(repeat('0d', 32), 'hex') and consumed_at is not null), 'a consumed matching OTP remains after failed SMS compensation');
 
 
 insert into public.users (id, organization_id, role, is_active)
