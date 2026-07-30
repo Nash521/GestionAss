@@ -45,7 +45,7 @@ async function loadRoute(path, componentName) {
 test('the splash screen renders the bundled logo and schedules a three-second login replacement', async () => {
   const source = await readFile(new URL('../app/index.tsx', import.meta.url), 'utf8');
 
-  assert.match(source, /logo-removebg-preview\.png/);
+  assert.match(source, /require\("\.\.\/assets\/logo-removebg-preview\.png"\)/);
   assert.match(source, /setTimeout\(\(\) => \{\s*router\.replace\("\/login"\);\s*\}, 3000\)/s);
   assert.match(source, /clearTimeout\(timeout\)/);
 });

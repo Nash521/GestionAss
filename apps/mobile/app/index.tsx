@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { router } from "expo-router";
 import { Image, StyleSheet, View } from "react-native";
 
-const logo = require("../../../maquette/logo-removebg-preview.png");
+const logo = require("../assets/logo-removebg-preview.png");
 
 export default function Index() {
   useEffect(() => {
