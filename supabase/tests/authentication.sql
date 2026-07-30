@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(19);
 
 select has_table('public', 'organizations', 'organizations is available for authentication data');
 select has_table('public', 'users', 'application users table exists');
@@ -10,6 +10,7 @@ select has_table('public', 'membership_requests', 'membership requests table exi
 select has_table('public', 'auth_otps', 'OTP persistence table exists');
 select has_function('public', 'is_admin', array['uuid'], 'active administrator predicate exists');
 select has_function('public', 'is_active_admin_for_organization', array['uuid', 'uuid'], 'organization-scoped active administrator predicate exists');
+select has_function('public', 'verify_and_consume_otp', array['text', 'text', 'bytea'], 'atomic OTP verification function exists');
 select policies_are(
   'public',
   'membership_requests',
@@ -39,6 +40,24 @@ insert into public.organizations (id, name, membership_fee_amount)
 values
   ('20000000-0000-0000-0000-000000000001', 'Organisation de test', 1000),
   ('20000000-0000-0000-0000-000000000002', 'Autre organisation de test', 1000);
+
+insert into public.auth_otps (phone, purpose, code_hash, expires_at)
+values ('+2250701020305', 'registration', decode(repeat('01', 32), 'hex'), now() + interval '10 minutes');
+
+select ok(
+  not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('02', 32), 'hex'))
+  and not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('03', 32), 'hex'))
+  and not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('04', 32), 'hex'))
+  and not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('05', 32), 'hex'))
+  and not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('06', 32), 'hex'))
+  and not public.verify_and_consume_otp('+2250701020305', 'registration', decode(repeat('07', 32), 'hex')),
+  'serialized OTP failures remain rejected after the attempt limit'
+);
+select is(
+  (select attempts from public.auth_otps where phone = '+2250701020305' and purpose = 'registration'),
+  5::smallint,
+  'OTP failures never increment attempts beyond the limit'
+);
 
 insert into public.users (id, organization_id, role, is_active)
 values
