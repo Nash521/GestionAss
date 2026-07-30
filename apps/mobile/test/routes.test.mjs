@@ -90,3 +90,15 @@ test('the sign-up screen uses the unified background without scrolling and compa
   assert.match(source, /minHeight: 42/);
   assert.match(source, /router\.push\("\/\(auth\)\/verify-phone"\)/);
 });
+
+test('the sign-up screen exposes Feather icons, password criteria and the temporary login route', async () => {
+  const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /@expo\/vector-icons/);
+  assert.match(source, /showPassword/);
+  assert.match(source, /showPasswordConfirmation/);
+  assert.match(source, /Une majuscule/);
+  assert.match(source, /Un chiffre/);
+  assert.match(source, /Un caractère spécial/);
+  assert.match(source, /router\.replace\("\/login"\)/);
+});
