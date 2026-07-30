@@ -141,3 +141,15 @@ test('the OTP screen renders six code cells, keyboard support and a guarded rese
   assert.match(source, /RESEND_DELAY_SECONDS = 45/);
   assert.match(source, /router\.replace\("\/\(auth\)\/sign-up"\)/);
 });
+
+test('the pending-request screen uses the waiting illustration and returns to login', async () => {
+  const source = await readFile(new URL('../app/(auth)/request-pending.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /image_attente\.png/);
+  assert.match(source, /fond_effetvague\.png/);
+  assert.match(source, /Demande d’inscription reçue/);
+  assert.match(source, /En attente de validation/);
+  assert.match(source, /hourglass/);
+  assert.match(source, /send/);
+  assert.match(source, /href="\/login"/);
+});
