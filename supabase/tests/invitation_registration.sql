@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(13);
+select plan(15);
 
 select has_table('public', 'organization_invitations', 'organization invitations table exists');
 select has_function(
@@ -56,6 +56,16 @@ select throws_ok(
   'P0001',
   'invitation is unavailable',
   'a consumed single-use invitation is rejected'
+);
+select has_function(
+  'public',
+  'release_registration_invitation',
+  array['uuid'],
+  'invitation compensation function exists'
+);
+select ok(
+  public.release_registration_invitation('50000000-0000-0000-0000-000000000001'),
+  'compensation releases the consumed invitation use'
 );
 
 insert into public.organization_invitations (id, organization_id, code_hash, is_active)
