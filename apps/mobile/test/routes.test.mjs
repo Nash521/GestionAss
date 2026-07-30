@@ -71,3 +71,13 @@ test('the login screen exposes an entry point to account registration', async ()
   assert.match(source, /href="\/sign-up"/);
   assert.match(source, /Cr\u00e9er un compte/);
 });
+
+test('the sign-up screen uses local wave artwork and requires matching passwords', async () => {
+  const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /effet_haut_page\.png/);
+  assert.match(source, /effet_bas_page\.png/);
+  assert.match(source, /Confirmer le mot de passe/);
+  assert.match(source, /password !== passwordConfirmation/);
+  assert.match(source, /router\.push\("\/\(auth\)\/verify-phone"\)/);
+});
