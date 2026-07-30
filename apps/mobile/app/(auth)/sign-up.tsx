@@ -71,7 +71,7 @@ export default function SignUp() {
         <Field icon="lock"><TextInput style={styles.input} placeholder="Confirmer le mot de passe" placeholderTextColor="#788798" value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoCapitalize="none" /><Pressable style={styles.eye} onPress={() => setShowPasswordConfirmation((current) => !current)}><Feather name={showPasswordConfirmation ? "eye-off" : "eye"} size={18} color="#788798" /></Pressable></Field>
 
         <View style={styles.requirements}>
-          {passwordRequirements.map(([label, valid]) => <View style={styles.requirement} key={label}><Feather name={valid ? "check-circle" : "circle"} size={13} color={valid ? "#00A99D" : "#8493A1"} /><Text style={[styles.requirementLabel, valid && styles.requirementLabelValid]}>{label}</Text></View>)}
+          {passwordRequirements.map(([label, valid], index) => <View style={[styles.requirement, index % 2 === 0 && styles.requirementLeft]} key={label}><Feather name={valid ? "check-circle" : "circle"} size={13} color={valid ? "#00A99D" : "#8493A1"} /><Text style={[styles.requirementLabel, valid && styles.requirementLabelValid]}>{label}</Text></View>)}
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={submit} disabled={loading} accessibilityRole="button"><Text style={styles.submitButtonLabel}>{loading ? "Envoi…" : "Créer un compte"}</Text></Pressable>
@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
   eye: { padding: 10 },
   requirements: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
   requirement: { width: "50%", flexDirection: "row", alignItems: "center", marginTop: 3 },
+  requirementLeft: { marginLeft: 16 },
   requirementLabel: { marginLeft: 4, color: "#8493A1", fontSize: 11 },
   requirementLabelValid: { color: "#007F76" },
   error: { marginBottom: 6, color: "#B3261E", fontSize: 12, textAlign: "center" },

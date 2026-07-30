@@ -102,3 +102,10 @@ test('the sign-up screen exposes Feather icons, password criteria and the tempor
   assert.match(source, /Un caractère spécial/);
   assert.match(source, /router\.replace\("\/login"\)/);
 });
+
+test('the left password-indicator column has a centered inset', async () => {
+  const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /index % 2 === 0 && styles\.requirementLeft/);
+  assert.match(source, /requirementLeft: \{ marginLeft: 16 \}/);
+});
