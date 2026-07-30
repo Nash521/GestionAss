@@ -21,7 +21,7 @@ async function loadRoute(path, componentName) {
     .replace("import { Redirect } from 'expo-router';", "const { Redirect } = dependencies['expo-router'];")
     .replace("import { Text, View } from 'react-native';", "const { Text, View } = dependencies['react-native'];")
     .replace(`export default function ${componentName}`, `function ${componentName}`)
-    .replace('<Redirect href="/(auth)/login" />', 'React.createElement(Redirect, { href: "/(auth)/login" })')
+    .replace('<Redirect href="/login" />', 'React.createElement(Redirect, { href: "/login" })')
     .replace('<Stack screenOptions={{ headerShown: false }} />', 'React.createElement(Stack, { screenOptions: { headerShown: false } })')
     .replace(
       /<View>\s*<Text>Login<\/Text>\s*<\/View>/,
@@ -42,13 +42,12 @@ async function loadRoute(path, componentName) {
   return module.exports.default;
 }
 
-test('the index component renders a redirect to the login route', async () => {
-  const Index = await loadRoute('../app/index.tsx', 'Index');
-  const element = Index();
+test('the splash screen renders the bundled logo and schedules a three-second login replacement', async () => {
+  const source = await readFile(new URL('../app/index.tsx', import.meta.url), 'utf8');
 
-  assert.equal(element.type, Redirect);
-  assert.equal(element.props.href, '/(auth)/login');
-  assert.equal(element.children.length, 0);
+  assert.match(source, /logo-removebg-preview\.png/);
+  assert.match(source, /setTimeout\(\(\) => \{\s*router\.replace\("\/login"\);\s*\}, 3000\)/s);
+  assert.match(source, /clearTimeout\(timeout\)/);
 });
 
 test('the root layout component renders a headerless stack', async () => {
@@ -60,12 +59,15 @@ test('the root layout component renders a headerless stack', async () => {
   assert.equal(element.children.length, 0);
 });
 
-test('the login component renders its placeholder UI', async () => {
-  const Login = await loadRoute('../app/(auth)/login.tsx', 'Login');
-  const element = Login();
-  const [label] = element.children;
+test('the login screen identifies the GestionAss application', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
 
-  assert.equal(element.type, View);
-  assert.equal(label.type, Text);
-  assert.equal(label.children[0], 'Login');
+  assert.match(source, /GestionAss/);
+});
+
+test('the login screen exposes an entry point to account registration', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /href="\/sign-up"/);
+  assert.match(source, /Cr\u00e9er un compte/);
 });
