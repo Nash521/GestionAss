@@ -128,3 +128,16 @@ test('the keyboard-safe container automatically follows focused Android inputs',
   assert.match(container, /KeyboardAwareScrollView/);
   assert.match(container, /enableOnAndroid/);
 });
+
+test('the OTP screen renders six code cells, keyboard support and a guarded resend flow', async () => {
+  const source = await readFile(new URL('../app/(auth)/verify-phone.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /KeyboardSafeScreen/);
+  assert.match(source, /Array\.from\(\{ length: 6 \}\)/);
+  assert.match(source, /maxLength=\{6\}/);
+  assert.match(source, /send-registration-otp/);
+  assert.match(source, /verify-registration-otp/);
+  assert.match(source, /create-membership-request/);
+  assert.match(source, /RESEND_DELAY_SECONDS = 45/);
+  assert.match(source, /router\.replace\("\/\(auth\)\/sign-up"\)/);
+});
