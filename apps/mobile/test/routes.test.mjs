@@ -153,3 +153,15 @@ test('the pending-request screen uses the waiting illustration and returns to lo
   assert.match(source, /send/);
   assert.match(source, /href="\/login"/);
 });
+
+test('the OTP screen follows the approved maquette hierarchy', async () => {
+  const source = await readFile(new URL('../app/(auth)/verify-phone.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /fond_effetvague\.png/);
+  assert.match(source, /logo-removebg-preview\.png/);
+  assert.match(source, /phoneCard/);
+  assert.match(source, /codeCells/);
+  assert.match(source, /justifyContent: "space-evenly"/);
+  assert.match(source, /minHeight: 52/);
+  assert.match(source, /Vérification par SMS/);
+});
