@@ -3,6 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { registrationFlow } from "../../src/features/auth/registration-flow";
+import { KeyboardSafeScreen } from "../../src/components/keyboard-safe-screen";
 import { invokeRegistrationFunction } from "../../src/lib/supabase";
 
 const background = require("../../assets/fond_effetvague.png");
@@ -58,6 +59,7 @@ export default function SignUp() {
   return (
     <View style={styles.page}>
       <Image source={background} style={styles.background} accessible={false} />
+      <KeyboardSafeScreen>
       <View style={styles.content}>
         <Image source={logo} style={styles.logo} accessibilityLabel="Logo GestionAss" />
         <Text style={styles.title}>Créer un compte</Text>
@@ -77,6 +79,7 @@ export default function SignUp() {
         <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={submit} disabled={loading} accessibilityRole="button"><Text style={styles.submitButtonLabel}>{loading ? "Envoi…" : "Créer un compte"}</Text></Pressable>
         <View style={styles.loginLine}><Text style={styles.loginText}>Vous avez déjà un compte ? </Text><Pressable onPress={() => router.replace("/login")} accessibilityRole="link"><Text style={styles.loginLink}>Se connecter</Text></Pressable></View>
       </View>
+      </KeyboardSafeScreen>
     </View>
   );
 }
@@ -84,7 +87,7 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
   background: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", resizeMode: "cover" },
-  content: { flex: 1, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 18, justifyContent: "center" },
+  content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 18, justifyContent: "center" },
   logo: { alignSelf: "center", width: 86, height: 86, marginBottom: 4, resizeMode: "contain" },
   title: { color: "#102B3D", fontSize: 24, fontWeight: "700", textAlign: "center" },
   subtitle: { marginTop: 2, marginBottom: 9, color: "#748397", fontSize: 13, textAlign: "center" },

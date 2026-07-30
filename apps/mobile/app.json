@@ -2,6 +2,7 @@
   "expo": {
     "name": "GestionAss",
     "slug": "gestion-ass",
-    "plugins": ["expo-router"]
+    "plugins": ["expo-router"],
+    "android": { "softwareKeyboardLayoutMode": "resize" }
   }
 }

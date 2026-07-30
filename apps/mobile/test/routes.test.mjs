@@ -109,3 +109,14 @@ test('the left password-indicator column is centered without wrapping the grid',
   assert.match(source, /index % 2 === 0 && styles\.requirementLeft/);
   assert.match(source, /requirementLeft: \{ width: "42%", marginLeft: "8%" \}/);
 });
+
+test('the sign-up screen uses the keyboard-safe container and Android resizes for the keyboard', async () => {
+  const signUp = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
+  const container = await readFile(new URL('../src/components/keyboard-safe-screen.tsx', import.meta.url), 'utf8');
+  const config = await readFile(new URL('../app.json', import.meta.url), 'utf8');
+
+  assert.match(signUp, /KeyboardSafeScreen/);
+  assert.match(container, /KeyboardAvoidingView/);
+  assert.match(container, /ScrollView/);
+  assert.match(config, /"softwareKeyboardLayoutMode": "resize"/);
+});
