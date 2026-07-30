@@ -149,7 +149,7 @@ test('the pending-request screen uses the waiting illustration and returns to lo
   assert.match(source, /fond_effetvague\.png/);
   assert.match(source, /Demande d’inscription reçue/);
   assert.match(source, /En attente de validation/);
-  assert.match(source, /hourglass/);
+  assert.match(source, /clock/);
   assert.match(source, /send/);
   assert.match(source, /href="\/login"/);
 });
