@@ -120,3 +120,11 @@ test('the sign-up screen uses the keyboard-safe container and Android resizes fo
   assert.match(container, /ScrollView/);
   assert.match(config, /"softwareKeyboardLayoutMode": "resize"/);
 });
+
+test('the keyboard-safe container automatically follows focused Android inputs', async () => {
+  const container = await readFile(new URL('../src/components/keyboard-safe-screen.tsx', import.meta.url), 'utf8');
+
+  assert.match(container, /react-native-keyboard-aware-scroll-view/);
+  assert.match(container, /KeyboardAwareScrollView/);
+  assert.match(container, /enableOnAndroid/);
+});
