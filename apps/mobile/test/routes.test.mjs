@@ -240,3 +240,12 @@ test('the OTP screen follows the approved maquette hierarchy', async () => {
   assert.match(source, /minHeight: 52/);
   assert.match(source, /Vérification par SMS/);
 });
+
+test('the password reset screen sends an OTP and returns to login after reset', async () => {
+  const source = await readFile(new URL('../app/(auth)/password-reset.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /send-password-reset-otp/);
+  assert.match(source, /reset-password-with-otp/);
+  assert.match(source, /clearBiometricLogin/);
+  assert.match(source, /router\.replace\("\/login"\)/);
+});

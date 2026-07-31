@@ -29,3 +29,8 @@ export async function unlockWithBiometrics() {
     return !error;
   } catch { return false; }
 }
+
+export async function clearBiometricLogin() {
+  await SecureStore.deleteItemAsync(SESSION_KEY);
+  await SecureStore.deleteItemAsync(ENABLED_KEY);
+}
