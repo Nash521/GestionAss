@@ -9,6 +9,17 @@ function getSupabase() {
 
 export async function invokeRegistrationFunction<T>(name: string, body: Record<string, unknown>) {
   const { data, error } = await getSupabase().functions.invoke<T>(name, { body });
-  if (error) throw error;
+  if (error || !data) throw error ?? new Error("Réponse Supabase manquante.");
   return data;
+}
+
+export type SessionDestination = "pending" | "active" | "unavailable";
+
+export async function signInWithPhone(phone: string, password: string) {
+  const { error } = await getSupabase().auth.signInWithPassword({ phone, password });
+  if (error) throw error;
+}
+
+export async function getSessionDestination() {
+  return invokeRegistrationFunction<{ destination: SessionDestination }>("get-session-destination", {});
 }

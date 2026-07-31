@@ -72,6 +72,24 @@ test('the login screen exposes an entry point to account registration', async ()
   assert.match(source, /Cr\u00e9er un compte/);
 });
 
+test('the login screen signs in then resolves its member destination', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /signInWithPhone\(phone, password\)/);
+  assert.match(source, /getSessionDestination\(\)/);
+  assert.match(source, /router\.replace\("\/request-pending"\)/);
+  assert.match(source, /router\.replace\("\/home"\)/);
+});
+
+test('the login screen exposes password recovery and account creation', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /Numéro de téléphone/);
+  assert.match(source, /Mot de passe oublié/);
+  assert.match(source, /href="\/password-reset"/);
+  assert.match(source, /href="\/sign-up"/);
+});
+
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
   const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
 
