@@ -90,6 +90,16 @@ test('the login screen exposes password recovery and account creation', async ()
   assert.match(source, /href="\/sign-up"/);
 });
 
+test('the login screen uses the compact sign-up dimensions', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /height: 86/);
+  assert.match(source, /fontSize: 24/);
+  assert.match(source, /fontSize: 13/);
+  assert.match(source, /minHeight: 42/);
+  assert.match(source, /minHeight: 44/);
+});
+
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
   const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
 
