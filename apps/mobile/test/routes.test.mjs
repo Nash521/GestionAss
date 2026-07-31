@@ -249,3 +249,10 @@ test('the password reset screen sends an OTP and returns to login after reset', 
   assert.match(source, /clearBiometricLogin/);
   assert.match(source, /router\.replace\("\/login"\)/);
 });
+
+test('the admin dashboard uses protected statistics and its supplied background', async () => {
+  const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  assert.match(source, /getAdminDashboard/);
+  assert.match(source, /arriere_plan_admin\.png/);
+  assert.match(source, /membership-requests/);
+});

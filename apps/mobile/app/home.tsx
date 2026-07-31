@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { getSessionDestination } from "../src/lib/supabase";
 
 export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => { void getSessionDestination().then((session) => setIsAdmin(session.role === "admin")).catch(() => setIsAdmin(false)); }, []);
+  useEffect(() => { void getSessionDestination().then((session) => { if (session.role === "admin") router.replace("/(admin)/dashboard"); else setIsAdmin(false); }).catch(() => setIsAdmin(false)); }, []);
   return <View style={styles.page}><Text style={styles.title}>Bienvenue sur GestionAss</Text><Text style={styles.message}>Votre compte est validé.</Text>{isAdmin ? <Link href="/(admin)/membership-requests" style={styles.link}>Gérer les demandes d’adhésion</Link> : null}</View>;
 }
 

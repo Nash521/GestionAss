@@ -29,3 +29,6 @@ export async function signInWithPhone(phone: string, password: string) {
 export async function getSessionDestination() {
   return invokeRegistrationFunction<{ destination: SessionDestination; role?: AccountRole }>("get-session-destination", {});
 }
+
+export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalDue: number; totalCollected: number; totalOutstanding: number };
+export function getAdminDashboard() { return invokeRegistrationFunction<DashboardSummary>("get-admin-dashboard", {}); }
