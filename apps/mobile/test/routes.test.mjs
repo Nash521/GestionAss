@@ -76,7 +76,7 @@ test('the login screen exposes an entry point to account registration', async ()
 test('the login screen signs in then resolves its member destination', async () => {
   const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
 
-  assert.match(source, /signInWithPhone\(phone, password\)/);
+  assert.match(source, /signInWithPhone\(normalizedPhone, password\)/);
   assert.match(source, /getSessionDestination\(\)/);
   assert.match(source, /router\.replace\("\/request-pending"\)/);
   assert.match(source, /router\.replace\("\/home"\)/);
@@ -255,4 +255,10 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /getAdminDashboard/);
   assert.match(source, /arriere_plan_admin\.png/);
   assert.match(source, /membership-requests/);
+});
+
+test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+  assert.match(source, /const normalizedPhone = phone\.startsWith\("\+225"\) \? phone : `\+225\$\{phone\}`/);
+  assert.match(source, /signInWithPhone\(normalizedPhone, password\)/);
 });

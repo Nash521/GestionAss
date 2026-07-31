@@ -28,14 +28,15 @@ export default function Login() {
   };
 
   const submit = async () => {
-    if (!phonePattern.test(phone) || !password) {
+    const normalizedPhone = phone.startsWith("+225") ? phone : `+225${phone}`;
+    if (!phonePattern.test(normalizedPhone) || !password) {
       setError("Veuillez renseigner votre numéro et votre mot de passe.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const session = await signInWithPhone(phone, password);
+      const session = await signInWithPhone(normalizedPhone, password);
       if (await canEnableBiometricLogin() && !biometricEnabled) Alert.alert("Activer l’empreinte ?", "Utilisez votre empreinte lors de votre prochaine connexion.", [{ text: "Plus tard", style: "cancel" }, { text: "Activer", onPress: () => { void enableBiometricLogin(session).then(() => setBiometricEnabled(true)); } }]);
       await routeDestination();
     } catch {
