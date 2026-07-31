@@ -7,7 +7,7 @@ Provide the GestionAss mobile login screen from `maquette/page_logIn.png` and ro
 ## User flow
 
 1. The user enters an Ivorian phone number and password on `/login`.
-2. The app normalizes the phone number to the technical email convention used by account creation and signs in through Supabase Auth.
+2. The app normalizes the phone number to the Ivorian `+2250XXXXXXXXX` format and signs in through Supabase Auth's phone-and-password API.
 3. With the authenticated session, the app invokes `get-session-destination`.
 4. The function returns one of three outcomes:
    - `pending`: redirect to `/request-pending`;
