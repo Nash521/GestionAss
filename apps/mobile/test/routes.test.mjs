@@ -100,6 +100,13 @@ test('the login screen uses the compact sign-up dimensions', async () => {
   assert.match(source, /minHeight: 44/);
 });
 
+test('the login screen keeps focused fields above the keyboard', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /KeyboardSafeScreen/);
+  assert.match(source, /<KeyboardSafeScreen>/);
+});
+
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
   const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
 

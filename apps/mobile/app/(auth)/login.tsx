@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardSafeScreen } from "../../src/components/keyboard-safe-screen";
 import { getSessionDestination, signInWithPhone } from "../../src/lib/supabase";
 
 const background = require("../../assets/fond_effetvague.png");
@@ -38,6 +39,7 @@ export default function Login() {
   return (
     <View style={styles.page}>
       <Image source={background} style={styles.background} accessible={false} />
+      <KeyboardSafeScreen>
       <View style={styles.content}>
         <Image source={logo} style={styles.logo} accessibilityLabel="Logo GestionAss" />
         <Text style={styles.title}>Bienvenue</Text>
@@ -66,6 +68,7 @@ export default function Login() {
         </Link>
         <View style={styles.security}><Feather name="shield" size={16} color="#00A99D" /><Text style={styles.securityText}>Vos données sont sécurisées et protégées.</Text></View>
       </View>
+      </KeyboardSafeScreen>
     </View>
   );
 }
