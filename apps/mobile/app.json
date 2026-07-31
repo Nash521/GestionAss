@@ -2,7 +2,13 @@
   "expo": {
     "name": "GestionAss",
     "slug": "gestion-ass",
-    "plugins": ["expo-router"],
-    "android": { "softwareKeyboardLayoutMode": "resize" }
+    "plugins": [
+      "expo-router",
+      ["expo-local-authentication", { "faceIDPermission": "Autoriser GestionAss à utiliser Face ID pour vous connecter." }],
+      "expo-secure-store"
+    ],
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    }
   }
 }

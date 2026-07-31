@@ -42,11 +42,12 @@ async function loadRoute(path, componentName) {
   return module.exports.default;
 }
 
-test('the splash screen renders the bundled logo and schedules a three-second login replacement', async () => {
+test('the splash screen renders the bundled logo and schedules a three-second login decision', async () => {
   const source = await readFile(new URL('../app/index.tsx', import.meta.url), 'utf8');
 
   assert.match(source, /require\("\.\.\/assets\/logo-removebg-preview\.png"\)/);
-  assert.match(source, /setTimeout\(\(\) => \{\s*router\.replace\("\/login"\);\s*\}, 3000\)/s);
+  assert.match(source, /setTimeout\(\(\) => \{/);
+  assert.match(source, /\}, 3000\)/);
   assert.match(source, /clearTimeout\(timeout\)/);
 });
 
@@ -105,6 +106,30 @@ test('the login screen keeps focused fields above the keyboard', async () => {
 
   assert.match(source, /KeyboardSafeScreen/);
   assert.match(source, /<KeyboardSafeScreen>/);
+});
+
+test('the biometric helper protects a stored session with device authentication', async () => {
+  const source = await readFile(new URL('../src/lib/biometric-session.ts', import.meta.url), 'utf8');
+
+  assert.match(source, /expo-local-authentication/);
+  assert.match(source, /expo-secure-store/);
+  assert.match(source, /requireAuthentication: true/);
+  assert.match(source, /setSession/);
+});
+
+test('the login screen offers an enabled biometric unlock', async () => {
+  const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /Se connecter avec empreinte/);
+  assert.match(source, /enableBiometricLogin/);
+  assert.match(source, /unlockWithBiometrics/);
+});
+
+test('the splash screen attempts biometric unlock before showing login', async () => {
+  const source = await readFile(new URL('../app/index.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /unlockWithBiometrics/);
+  assert.match(source, /getSessionDestination/);
 });
 
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {

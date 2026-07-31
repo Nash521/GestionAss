@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeScreen } from "../../src/components/keyboard-safe-screen";
+import { canEnableBiometricLogin, enableBiometricLogin, isBiometricLoginEnabled, unlockWithBiometrics } from "../../src/lib/biometric-session";
 import { getSessionDestination, signInWithPhone } from "../../src/lib/supabase";
 
 const background = require("../../assets/fond_effetvague.png");
@@ -15,6 +16,16 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => { void isBiometricLoginEnabled().then(setBiometricEnabled); }, []);
+
+  const routeDestination = async () => {
+    const { destination } = await getSessionDestination();
+    if (destination === "pending") return router.replace("/request-pending");
+    if (destination === "active") return router.replace("/home");
+    setError("Votre compte n’est pas disponible.");
+  };
 
   const submit = async () => {
     if (!phonePattern.test(phone) || !password) {
@@ -24,16 +35,20 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithPhone(phone, password);
-      const { destination } = await getSessionDestination();
-      if (destination === "pending") return router.replace("/request-pending");
-      if (destination === "active") return router.replace("/home");
-      setError("Votre compte n’est pas disponible.");
+      const session = await signInWithPhone(phone, password);
+      if (await canEnableBiometricLogin() && !biometricEnabled) Alert.alert("Activer l’empreinte ?", "Utilisez votre empreinte lors de votre prochaine connexion.", [{ text: "Plus tard", style: "cancel" }, { text: "Activer", onPress: () => { void enableBiometricLogin(session).then(() => setBiometricEnabled(true)); } }]);
+      await routeDestination();
     } catch {
       setError("Numéro ou mot de passe incorrect.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const unlock = async () => {
+    setLoading(true); setError(null);
+    try { if (await unlockWithBiometrics()) await routeDestination(); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -62,6 +77,7 @@ export default function Login() {
         <Pressable style={[styles.submitButton, loading && styles.disabled]} onPress={submit} disabled={loading} accessibilityRole="button">
           <Text style={styles.submitLabel}>{loading ? "Connexion…" : "Se connecter"}</Text>
         </Pressable>
+        {biometricEnabled ? <Pressable style={styles.biometricButton} onPress={unlock} disabled={loading} accessibilityRole="button"><Feather name="unlock" size={18} color="#00A99D" /><Text style={styles.biometricLabel}>Se connecter avec empreinte</Text></Pressable> : null}
         <View style={styles.divider}><View style={styles.line} /><Text style={styles.or}>ou</Text><View style={styles.line} /></View>
         <Link href="/sign-up" asChild>
           <Pressable style={styles.createButton} accessibilityRole="button"><Feather name="user-plus" size={18} color="#00A99D" /><Text style={styles.createLabel}>Créer un compte</Text></Pressable>
@@ -81,6 +97,7 @@ const styles = StyleSheet.create({
   prefix: { borderRightColor: "#D5DEE5", borderRightWidth: 1, color: "#102B3D", fontSize: 14, marginHorizontal: 8, paddingRight: 8 }, input: { color: "#102B3D", flex: 1, fontSize: 14, minHeight: 42 },
   resetLink: { alignSelf: "flex-end", color: "#00A99D", fontSize: 12, marginBottom: 10, marginTop: 2 }, error: { color: "#B3261E", fontSize: 12, marginBottom: 6, textAlign: "center" },
   submitButton: { alignItems: "center", backgroundColor: "#00A99D", borderRadius: 14, justifyContent: "center", minHeight: 44 }, disabled: { opacity: 0.6 }, submitLabel: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  biometricButton: { alignItems: "center", flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 8, minHeight: 32 }, biometricLabel: { color: "#00A99D", fontSize: 13, fontWeight: "700" },
   divider: { alignItems: "center", flexDirection: "row", gap: 12, marginVertical: 12 }, line: { backgroundColor: "#D5DEE5", flex: 1, height: 1 }, or: { color: "#748397", fontSize: 13 },
   createButton: { alignItems: "center", borderColor: "#00A99D", borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 44 }, createLabel: { color: "#00A99D", fontSize: 16, fontWeight: "700" },
   security: { alignItems: "center", flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18 }, securityText: { color: "#748397", fontSize: 12 },
