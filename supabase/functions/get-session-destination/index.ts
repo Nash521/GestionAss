@@ -24,8 +24,8 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const { data: userData, error: userError } = await database.auth.getUser(token);
   if (userError || !userData.user) return response({ error: "Unauthorized" }, 401);
 
-  const { data: account } = await database.from("users").select("is_active").eq("id", userData.user.id).maybeSingle();
-  if (account?.is_active) return response({ destination: "active" });
+  const { data: account } = await database.from("users").select("is_active, role").eq("id", userData.user.id).maybeSingle();
+  if (account?.is_active) return response({ destination: "active", role: account.role });
 
   const { data: membershipRequest } = await database.from("membership_requests").select("status").eq("user_id", userData.user.id).maybeSingle();
   if (membershipRequest?.status === "pending") return response({ destination: "pending" });

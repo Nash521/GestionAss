@@ -141,6 +141,12 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /decide-membership-request/);
 });
 
+test('the home screen exposes the admin request route only after checking the account role', async () => {
+  const source = await readFile(new URL('../app/home.tsx', import.meta.url), 'utf8');
+  assert.match(source, /getSessionDestination/);
+  assert.match(source, /membership-requests/);
+});
+
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
   const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
 

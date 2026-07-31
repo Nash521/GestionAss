@@ -18,6 +18,7 @@ export async function invokeRegistrationFunction<T>(name: string, body: Record<s
 }
 
 export type SessionDestination = "pending" | "active" | "unavailable";
+export type AccountRole = "admin" | "member";
 
 export async function signInWithPhone(phone: string, password: string) {
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ phone, password });
@@ -26,5 +27,5 @@ export async function signInWithPhone(phone: string, password: string) {
 }
 
 export async function getSessionDestination() {
-  return invokeRegistrationFunction<{ destination: SessionDestination }>("get-session-destination", {});
+  return invokeRegistrationFunction<{ destination: SessionDestination; role?: AccountRole }>("get-session-destination", {});
 }
