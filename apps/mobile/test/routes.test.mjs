@@ -132,6 +132,15 @@ test('the splash screen attempts biometric unlock before showing login', async (
   assert.match(source, /getSessionDestination/);
 });
 
+test('the admin request page exposes approval and rejection actions', async () => {
+  const source = await readFile(new URL('../app/(admin)/membership-requests.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /Demandes d’adhésion/);
+  assert.match(source, /Approuver/);
+  assert.match(source, /Refuser/);
+  assert.match(source, /decide-membership-request/);
+});
+
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
   const source = await readFile(new URL('../app/(auth)/sign-up.tsx', import.meta.url), 'utf8');
 
