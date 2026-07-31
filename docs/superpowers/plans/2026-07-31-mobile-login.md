@@ -42,13 +42,23 @@ const { data: request } = await database.from("membership_requests").select("sta
 return response({ destination: account?.is_active ? "active" : request?.status === "pending" ? "pending" : "unavailable" });
 ```
 
-- [ ] **Step 4: Add pending, active, and unavailable assertions, then run the test**
+- [ ] **Step 4: Add pending, active, and unavailable integration assertions, then run the test**
 
 ```ts
-for (const [fixture, destination] of [["pending", "pending"], ["active", "active"], ["rejected", "unavailable"]] as const) {
-  const body = await resolveFixture(fixture);
-  if (body.destination !== destination) throw new Error(`expected ${destination}`);
-}
+const database = createClient(Deno.env.get("LOCAL_SUPABASE_URL")!, Deno.env.get("LOCAL_SUPABASE_SERVICE_ROLE_KEY")!);
+const user = await database.auth.admin.createUser({ phone: "+2250701020304", password: "Strong!Pass1", phone_confirm: true });
+await database.from("users").insert({ id: user.data.user!.id, organization_id: organizationId, role: "member", is_active: false });
+await database.from("membership_requests").insert({ organization_id: organizationId, user_id: user.data.user!.id, first_name: "Awa", last_name: "Kone", phone: "+2250701020304", phone_verified_at: new Date().toISOString() });
+const session = await database.auth.signInWithPassword({ phone: "+2250701020304", password: "Strong!Pass1" });
+const pending = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${session.data.session!.access_token}` } });
+if ((await pending.json()).destination !== "pending") throw new Error("expected pending");
+await database.from("users").update({ is_active: true }).eq("id", user.data.user!.id);
+const active = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${session.data.session!.access_token}` } });
+if ((await active.json()).destination !== "active") throw new Error("expected active");
+await database.from("users").update({ is_active: false }).eq("id", user.data.user!.id);
+await database.from("membership_requests").update({ status: "rejected", reviewed_by: adminId, reviewed_at: new Date().toISOString(), rejection_reason: "Test" }).eq("user_id", user.data.user!.id);
+const unavailable = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${session.data.session!.access_token}` } });
+if ((await unavailable.json()).destination !== "unavailable") throw new Error("expected unavailable");
 ```
 
 Run: `deno test --allow-net --allow-env --allow-run supabase/functions/get-session-destination/index_test.ts`
