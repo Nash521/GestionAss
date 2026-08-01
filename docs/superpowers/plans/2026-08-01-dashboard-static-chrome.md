@@ -25,7 +25,7 @@ assert.match(source, /name="settings"/);
 assert.match(source, /name="grid"/);
 assert.match(source, /name="users"/);
 assert.match(source, /name="credit-card"/);
-assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:0/);
+assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:28/);
 assert.match(source, /nav:\{[^}]*position:"absolute"[^}]*bottom:20/);
 ```
 
@@ -51,6 +51,14 @@ Use `calendar` and `settings` for the header actions. Use `grid`, `users`, and `
 - [ ] **Step 3: Apply fixed-chrome spacing and button styling**
 
 Use a 64-pixel logo, white rounded 46-pixel header buttons with elevation, and `content` top/bottom padding that clears the header and navigation.
+
+- [ ] **Step 3a: Position the fixed header below the status area**
+
+Set the header style property to:
+
+```ts
+top:28
+```
 
 - [ ] **Step 4: Run regression and type checks**
 
