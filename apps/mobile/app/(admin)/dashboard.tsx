@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DashboardSummary, getAdminDashboard } from "../../src/lib/supabase";
 
-const background = require("../../assets/new_fond_dashbord.png");
+const background = require("../../assets/arriere_plan_admin.png");
 const logo = require("../../assets/logo-removebg-preview.png");
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
 const soon = () => Alert.alert("Bientôt disponible", "Cette fonctionnalité arrive prochainement.");
