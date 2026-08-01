@@ -265,6 +265,14 @@ test('the dashboard background scrolls with its content', async () => {
   assert.match(source, /arriere_plan_admin\.png/);
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
   assert.match(source, /card:\{[^}]*width:"48%"/);
+  assert.match(source, /name="calendar"/);
+  assert.match(source, /name="settings"/);
+  assert.match(source, /name="grid"/);
+  assert.match(source, /name="users"/);
+  assert.match(source, /name="credit-card"/);
+  assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:0/);
+  assert.match(source, /nav:\{[^}]*position:"absolute"/);
+  assert.match(source, /nav:\{[^}]*bottom:20/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {

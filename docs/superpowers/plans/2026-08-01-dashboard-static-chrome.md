@@ -24,7 +24,7 @@ assert.match(source, /name="calendar"/);
 assert.match(source, /name="settings"/);
 assert.match(source, /name="grid"/);
 assert.match(source, /name="users"/);
-assert.match(source, /name="wallet"/);
+assert.match(source, /name="credit-card"/);
 assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:0/);
 assert.match(source, /nav:\{[^}]*position:"absolute"[^}]*bottom:20/);
 ```
@@ -46,7 +46,7 @@ Render the scroll view and its `ImageBackground` inside a root `View`, then rend
 
 - [ ] **Step 2: Replace labels with selected icons**
 
-Use `calendar` and `settings` for the header actions. Use `grid`, `users`, and `wallet` for the bottom navigation. Do not render any action or navigation text.
+Use `calendar` and `settings` for the header actions. Use `grid`, `users`, and `credit-card` for the bottom navigation. Do not render any action or navigation text.
 
 - [ ] **Step 3: Apply fixed-chrome spacing and button styling**
 

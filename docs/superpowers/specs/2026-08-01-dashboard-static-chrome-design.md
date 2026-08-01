@@ -10,7 +10,7 @@ Keep the dashboard header and bottom navigation visible while only the dashboard
 - Its logo is reduced to 64 pixels high and wide.
 - Event and settings actions use `calendar` and `settings` Feather icons, without labels, in separate white rounded containers with a subtle shadow.
 - The bottom navigation is fixed above the safe area, without labels.
-- It uses `grid`, `users`, and `wallet` Feather icons for dashboard, members, and finances. The dashboard icon is turquoise.
+- It uses `grid`, `users`, and `credit-card` Feather icons for dashboard, members, and finances. The dashboard icon is turquoise.
 - The scrollable content reserves top and bottom spacing so it never sits under either fixed bar.
 
 ## Scope
