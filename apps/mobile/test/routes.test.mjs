@@ -264,6 +264,7 @@ test('the dashboard background scrolls with its content', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /arriere_plan_admin\.png/);
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
+  assert.match(source, /card:\{[^}]*width:"48%"/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
