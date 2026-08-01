@@ -270,7 +270,7 @@ test('the dashboard background scrolls with its content', async () => {
   assert.match(source, /name="grid"/);
   assert.match(source, /name="users"/);
   assert.match(source, /name="credit-card"/);
-  assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:0/);
+  assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:28/);
   assert.match(source, /nav:\{[^}]*position:"absolute"/);
   assert.match(source, /nav:\{[^}]*bottom:20/);
 });
