@@ -6,7 +6,7 @@ Keep the dashboard header and bottom navigation visible while only the dashboard
 
 ## Layout
 
-- The header is fixed at the top of the screen.
+- The header is fixed 28 pixels below the top of the screen, clearing the system status area.
 - Its logo is reduced to 64 pixels high and wide.
 - Event and settings actions use `calendar` and `settings` Feather icons, without labels, in separate white rounded containers with a subtle shadow.
 - The bottom navigation is fixed above the safe area, without labels.
