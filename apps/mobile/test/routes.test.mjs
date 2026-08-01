@@ -253,11 +253,17 @@ test('the password reset screen sends an OTP and returns to login after reset', 
 test('the admin dashboard uses protected statistics and its supplied background', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /getAdminDashboard/);
-  assert.match(source, /arriere_plan_admin\.png/);
+  assert.match(source, /new_fond_dashbord\.png/);
   assert.match(source, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
+});
+
+test('the dashboard background scrolls with its content', async () => {
+  const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  assert.match(source, /new_fond_dashbord\.png/);
+  assert.match(source, /<ScrollView[^>]*><ImageBackground/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
