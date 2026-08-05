@@ -256,7 +256,7 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /image_fleur\.png/);
   assert.match(source, /welcomeIllustration/);
-  assert.match(source, /height:200,width:200,opacity:\.1/);
+  assert.match(source, /height:400,width:400,opacity:\.1/);
   assert.match(source, /tintColor:"#00A99D"/);
   assert.match(source, /styles\.hello,\{marginTop:8\}/);
   assert.match(source, /styles\.title,\{fontSize:28\}/);
