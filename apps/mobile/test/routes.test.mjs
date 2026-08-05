@@ -268,11 +268,12 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
-  assert.match(source, /6 mois⌄/);
+  assert.match(source, /6 mois/);
+  assert.match(source, /name="chevron-down"/);
   assert.match(source, /numberOfLines=\{1\}/);
   assert.match(source, /styles\.panelHead,\{minHeight:58,position:"relative"\}/);
   assert.match(source, /styles\.panelTitle,\{flex:1,marginRight:76\}/);
-  assert.match(source, /styles\.period,\{position:"absolute",right:0,top:0\}/);
+  assert.match(source, /styles\.period,\{[^}]*position:"absolute",right:0,top:0\}/);
 });
 
 test('the dashboard background scrolls with its content', async () => {
