@@ -254,6 +254,8 @@ test('the admin dashboard uses protected statistics and its supplied background'
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /getAdminDashboard/);
   assert.match(source, /Fond_ecranMobile\.png/);
+  assert.match(source, /image_fleur\.png/);
+  assert.match(source, /welcomeIllustration/);
   assert.match(source, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
@@ -264,15 +266,15 @@ test('the dashboard background scrolls with its content', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
-  assert.match(source, /card:\{[^}]*width:"48%"/);
+  assert.match(source, /card:\s*\{[^}]*width:\s*"48%"/);
   assert.match(source, /name="calendar"/);
   assert.match(source, /name="settings"/);
   assert.match(source, /name="grid"/);
   assert.match(source, /name="users"/);
   assert.match(source, /name="credit-card"/);
-  assert.match(source, /header:\{[^}]*position:"absolute"[^}]*top:28/);
-  assert.match(source, /nav:\{[^}]*position:"absolute"/);
-  assert.match(source, /nav:\{[^}]*bottom:20/);
+  assert.match(source, /header:\s*\{[^}]*position:\s*"absolute"[^}]*top:\s*28/);
+  assert.match(source, /nav:\s*\{[^}]*position:\s*"absolute"/);
+  assert.match(source, /nav:\s*\{[^}]*bottom:\s*20/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
