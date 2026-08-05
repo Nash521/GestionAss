@@ -276,6 +276,8 @@ test('the dashboard background scrolls with its content', async () => {
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
   assert.match(source, /card:\s*\{[^}]*width:\s*"48%"/);
   assert.match(source, /name="megaphone-outline"/);
+  assert.match(source, /"user-plus","Total droit d’adhésion"/);
+  assert.match(source, /"shield","Total couverture ou dépense"/);
   assert.match(source, /name="settings"/);
   assert.match(source, /name="grid"/);
   assert.match(source, /name="users"/);

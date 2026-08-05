@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   useEffect(() => { void getAdminDashboard().then(setData).catch(() => setError(true)); }, []);
   if (!data && !error) return <View style={styles.center}><Text>Chargement du tableau de bord…</Text></View>;
   if (error || !data) return <View style={styles.center}><Text>Impossible de charger le tableau de bord.</Text></View>;
-  const cards = [["users","Total membres",String(data.totalMembers),"Voir les membres"],["calendar","Total à jour",String(data.membersPaid),"Cotisations réglées"],["clock","Total en retard",String(data.membersLate),"À relancer"],["handshake","Total droit d’adhésion",money(data.totalDue),"Montant dû"],["file-text","Total cotisation mensuelle",money(data.totalCollected),"Recettes"],["wallet","Total couverture ou dépense",money(data.totalOutstanding),"Solde"]] as const;
+  const cards = [["users","Total membres",String(data.totalMembers),"Voir les membres"],["calendar","Total à jour",String(data.membersPaid),"Cotisations réglées"],["clock","Total en retard",String(data.membersLate),"À relancer"],["user-plus","Total droit d’adhésion",money(data.totalDue),"Montant dû"],["file-text","Total cotisation mensuelle",money(data.totalCollected),"Recettes"],["shield","Total couverture ou dépense",money(data.totalOutstanding),"Solde"]] as const;
   return <View style={styles.page}>
     <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
   <View style={[styles.content,{paddingTop:104}]}>
