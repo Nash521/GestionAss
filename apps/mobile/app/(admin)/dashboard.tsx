@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Animated, Image, ImageBackground, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DashboardSummary, getAdminDashboard } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -12,12 +12,29 @@ const soon = () => Alert.alert("Bientôt disponible", "Cette fonctionnalité arr
 
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardSummary | null>(null); const [error, setError] = useState(false);
+  const previousOffset = useRef(0);
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const navTranslateY = useRef(new Animated.Value(0)).current;
+  const chromeVisible = useRef(true);
+  const animateChrome = (visible: boolean) => {
+    if (chromeVisible.current === visible) return;
+    chromeVisible.current = visible;
+    Animated.parallel([
+      Animated.timing(headerTranslateY, { toValue: visible ? 0 : -120, duration: 200, useNativeDriver: true }),
+      Animated.timing(navTranslateY, { toValue: visible ? 0 : 100, duration: 200, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offset = Math.max(0, nativeEvent.contentOffset.y); const delta = offset - previousOffset.current;
+    if (Math.abs(delta) >= 12) animateChrome(delta < 0 || offset < 12);
+    previousOffset.current = offset;
+  };
   useEffect(() => { void getAdminDashboard().then(setData).catch(() => setError(true)); }, []);
   if (!data && !error) return <View style={styles.center}><Text>Chargement du tableau de bord…</Text></View>;
   if (error || !data) return <View style={styles.center}><Text>Impossible de charger le tableau de bord.</Text></View>;
   const cards = [["users","Total membres",String(data.totalMembers),"Voir les membres"],["calendar","Total à jour",String(data.membersPaid),"Cotisations réglées"],["clock","Total en retard",String(data.membersLate),"À relancer"],["user-plus","Total droit d’adhésion",money(data.totalDue),"Montant dû"],["file-text","Total cotisation mensuelle",money(data.totalCollected),"Recettes"],["shield","Total couverture ou dépense",money(data.totalOutstanding),"Solde"]] as const;
   return <View style={styles.page}>
-    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
+    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} onScroll={handleScroll} scrollEventThrottle={16}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
   <View style={[styles.content,{paddingTop:104}]}>
     <View style={styles.welcome}><Image source={flower} style={[styles.welcomeIllustration,{height:330,width:330,opacity:.1,right:-90,top:-120,bottom:null,resizeMode:"cover",zIndex:0,tintColor:"#00A99D"}]} /><Text style={[styles.hello,{marginTop:8}]}>Bonjour, Admin</Text><Text style={[styles.title,{fontSize:28}]}>Tableau de bord</Text><Text style={[styles.subtitle,{marginTop:10,fontSize:14}]}>Voici un aperçu de l’activité de {data.organizationName}.</Text></View>
     <View style={[styles.grid,{zIndex:1}]}>{cards.map(([icon,title,value,caption], index) => <Pressable key={title} style={styles.card} onPress={index === 0 ? soon : undefined}><View style={styles.icon}><Feather name={icon as never} size={24} color="#00A99D" /></View><Text style={styles.cardTitle}>{title}</Text><Text style={styles.value}>{value}</Text><Text style={styles.caption}>{caption}</Text></Pressable>)}</View>
@@ -25,8 +42,8 @@ export default function AdminDashboard() {
     <View style={styles.panel}><View style={[styles.panelHead,{minHeight:58,position:"relative"}]}><Text style={[styles.panelTitle,{flex:1,marginRight:76}]} numberOfLines={2}>Graphique évolution des cotisations</Text><View style={[styles.period,{alignItems:"center",flexDirection:"row",gap:4,position:"absolute",right:0,top:0}]}><Text style={{color:"#65758A"}} numberOfLines={1}>6 mois</Text><Feather name="chevron-down" size={14} color="#65758A" /></View></View><View style={styles.graph}><Feather name="bar-chart-2" size={42} color="#00A99D" /><Text style={styles.emptyTitle}>Module Finances bientôt disponible</Text><Text style={styles.emptyText}>L’évolution mensuelle apparaîtra ici.</Text></View></View>
     <View style={styles.panel}><View style={styles.panelHead}><Text style={styles.panelTitle}>Dernières transactions</Text><Pressable onPress={soon}><Text style={styles.link}>Voir tout  →</Text></Pressable></View><View style={styles.transaction}><Feather name="activity" size={25} color="#00A99D" /><View><Text style={styles.emptyTitle}>Aucune transaction</Text><Text style={styles.emptyText}>Le module Finances sera bientôt disponible.</Text></View></View></View>
   </View></ImageBackground></ScrollView>
-    <View style={styles.header}><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Événements"><Ionicons name="megaphone-outline" size={24} color="#102B3D" /></Pressable><Image source={logo} style={styles.logo}/><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable></View>
-    <View style={styles.nav}><Pressable style={styles.navAction} accessibilityLabel="Tableau de bord"><Feather name="grid" size={25} color="#00A99D" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Membres"><Feather name="users" size={25} color="#65758A" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Finances"><Feather name="credit-card" size={25} color="#65758A" /></Pressable></View>
+    <Animated.View style={[styles.header,{transform:[{translateY:headerTranslateY}]}]}><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Événements"><Ionicons name="megaphone-outline" size={24} color="#102B3D" /></Pressable><Image source={logo} style={styles.logo}/><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable></Animated.View>
+    <Animated.View style={[styles.nav,{transform:[{translateY:navTranslateY}]}]}><Pressable style={styles.navAction} accessibilityLabel="Tableau de bord"><Feather name="grid" size={25} color="#00A99D" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Membres"><Feather name="users" size={25} color="#65758A" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Finances"><Feather name="credit-card" size={25} color="#65758A" /></Pressable></Animated.View>
   </View>;
 }
 const styles = StyleSheet.create({

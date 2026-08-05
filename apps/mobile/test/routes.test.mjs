@@ -274,6 +274,13 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /styles\.panelHead,\{minHeight:58,position:"relative"\}/);
   assert.match(source, /styles\.panelTitle,\{flex:1,marginRight:76\}/);
   assert.match(source, /styles\.period,\{[^}]*position:"absolute",right:0,top:0\}/);
+  assert.match(source, /Animated\.Value\(0\)/);
+  assert.match(source, /onScroll=\{handleScroll\}/);
+  assert.match(source, /duration:\s*200/);
+  assert.match(source, /translateY:\s*headerTranslateY/);
+  assert.match(source, /translateY:\s*navTranslateY/);
+  assert.match(source, /toValue:\s*visible \? 0 : -120/);
+  assert.match(source, /toValue:\s*visible \? 0 : 100/);
 });
 
 test('the dashboard background scrolls with its content', async () => {
