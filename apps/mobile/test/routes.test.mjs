@@ -256,6 +256,8 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /image_fleur\.png/);
   assert.match(source, /welcomeIllustration/);
+  assert.match(source, /height:190,width:190,opacity:1/);
+  assert.match(source, /styles\.title,\{fontSize:28\}/);
   assert.match(source, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
