@@ -268,6 +268,8 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
+  assert.match(source, /6 mois⌄/);
+  assert.match(source, /numberOfLines=\{1\}/);
 });
 
 test('the dashboard background scrolls with its content', async () => {
