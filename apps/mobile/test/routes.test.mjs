@@ -270,6 +270,8 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /membership-requests/);
   assert.match(source, /6 mois⌄/);
   assert.match(source, /numberOfLines=\{1\}/);
+  assert.match(source, /styles\.panelTitle,\{flex:1,marginRight:8\}/);
+  assert.match(source, /styles\.period,\{flexShrink:0\}/);
 });
 
 test('the dashboard background scrolls with its content', async () => {
