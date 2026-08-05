@@ -260,7 +260,8 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /tintColor:"#00A99D"/);
   assert.match(source, /styles\.hello,\{marginTop:8\}/);
   assert.match(source, /styles\.title,\{fontSize:28\}/);
-  assert.match(source, /styles\.subtitle,\{marginTop:10\}/);
+  assert.match(source, /styles\.subtitle,\{marginTop:10,fontSize:14\}/);
+  assert.match(source, /right:-90,top:-70/);
   assert.match(source, /styles\.content,\{paddingTop:104\}/);
   assert.match(source, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
