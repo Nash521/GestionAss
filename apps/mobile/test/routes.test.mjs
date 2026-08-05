@@ -253,7 +253,7 @@ test('the password reset screen sends an OTP and returns to login after reset', 
 test('the admin dashboard uses protected statistics and its supplied background', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /getAdminDashboard/);
-  assert.match(source, /arriere_plan_admin\.png/);
+  assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
@@ -262,7 +262,7 @@ test('the admin dashboard uses protected statistics and its supplied background'
 
 test('the dashboard background scrolls with its content', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
-  assert.match(source, /arriere_plan_admin\.png/);
+  assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
   assert.match(source, /card:\{[^}]*width:"48%"/);
   assert.match(source, /name="calendar"/);
