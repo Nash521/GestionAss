@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Alert, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { DashboardSummary, getAdminDashboard } from "../../src/lib/supabase";
@@ -25,7 +25,7 @@ export default function AdminDashboard() {
     <View style={styles.panel}><View style={styles.panelHead}><Text style={styles.panelTitle}>Graphique évolution des cotisations</Text><Text style={styles.period}>6 derniers mois⌄</Text></View><View style={styles.graph}><Feather name="bar-chart-2" size={42} color="#00A99D" /><Text style={styles.emptyTitle}>Module Finances bientôt disponible</Text><Text style={styles.emptyText}>L’évolution mensuelle apparaîtra ici.</Text></View></View>
     <View style={styles.panel}><View style={styles.panelHead}><Text style={styles.panelTitle}>Dernières transactions</Text><Pressable onPress={soon}><Text style={styles.link}>Voir tout  →</Text></Pressable></View><View style={styles.transaction}><Feather name="activity" size={25} color="#00A99D" /><View><Text style={styles.emptyTitle}>Aucune transaction</Text><Text style={styles.emptyText}>Le module Finances sera bientôt disponible.</Text></View></View></View>
   </View></ImageBackground></ScrollView>
-    <View style={styles.header}><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Événements"><Feather name="calendar" size={22} color="#102B3D" /></Pressable><Image source={logo} style={styles.logo}/><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable></View>
+    <View style={styles.header}><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Événements"><Ionicons name="megaphone-outline" size={24} color="#102B3D" /></Pressable><Image source={logo} style={styles.logo}/><Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable></View>
     <View style={styles.nav}><Pressable style={styles.navAction} accessibilityLabel="Tableau de bord"><Feather name="grid" size={25} color="#00A99D" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Membres"><Feather name="users" size={25} color="#65758A" /></Pressable><Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Finances"><Feather name="credit-card" size={25} color="#65758A" /></Pressable></View>
   </View>;
 }
