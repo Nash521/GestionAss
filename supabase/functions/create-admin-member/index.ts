@@ -55,7 +55,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
         phone: input.phone, requested_role: input.role,
       }));
     } catch {
-      await compensate();
+      if (!await compensate()) return response({ error: "Service unavailable" }, 503);
       return response({ error: "Service unavailable" }, 503);
     }
     if (provisionError) {

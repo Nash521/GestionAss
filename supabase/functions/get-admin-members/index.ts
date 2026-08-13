@@ -15,7 +15,7 @@ const parseRequest = (body: unknown): ListRequest | null => {
 };
 
 const count = (value: number | string | null | undefined) => Number(value ?? 0);
-const isUnauthorized = (error: { status?: number }) => error.status === 401 || error.status === 403;
+const isUnauthorized = (error: { status?: number; message?: string }) => error.status === 401 || error.status === 403 || /^unauthorized$/i.test(error.message ?? "");
 const logOperationalFailure = (context: string) => console.error(`get-admin-members: ${context}`);
 
 Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => {
@@ -38,7 +38,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
       admin_id: identity.user.id, query: input.query, payment_status: input.paymentStatus, role_filter: input.role,
       offset_value: input.offset, limit_value: input.limit,
     });
-    if (error) return response({ error: "Service unavailable" }, 503);
+    if (error) return response({ error: isUnauthorized(error) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(error) ? 401 : 503);
     const rows = (data ?? []) as RpcRow[];
     const metadata = rows[0];
     return response({
