@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
 import { AdminMember, AdminMembersPage, getAdminMembers } from "../../src/lib/supabase";
@@ -32,7 +32,15 @@ export default function AdminMembers() {
     } catch { if (requestId === requestSequence.current) setError(true); }
     finally { if (requestId === requestSequence.current) { setLoading(false); setLoadingMore(false); } }
   }, [query, memberStatus, paymentStatus, role]);
+  const loadMembersRef = useRef(loadMembers);
+  const skipInitialFocusRefresh = useRef(true);
+  useEffect(() => { loadMembersRef.current = loadMembers; }, [loadMembers]);
   useEffect(() => { requestSequence.current++; setMembers([]); const timer = setTimeout(() => { void loadMembers(0); }, 300); return () => clearTimeout(timer); }, [loadMembers]);
+  useFocusEffect(useCallback(() => {
+    if (skipInitialFocusRefresh.current) { skipInitialFocusRefresh.current = false; return; }
+    requestSequence.current++;
+    void loadMembersRef.current(0);
+  }, []));
   const filter = <T extends string>(current: T, change: (value: T) => void, labels: Record<T, string>) => <View style={styles.filterRow}>{(Object.keys(labels) as T[]).map((value) => <Pressable key={value} style={[styles.filter, current === value && styles.filterActive]} onPress={() => change(value)}><Text style={[styles.filterText, current === value && styles.filterTextActive]}>{labels[value]}</Text></Pressable>)}</View>;
   return <View style={styles.page}>
     <ScrollView showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>

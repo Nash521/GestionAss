@@ -37,7 +37,7 @@ export default function NewAdminMember() {
       const normalizedPhone = phone.startsWith("+225") ? phone : `+225${phone}`;
       await createAdminMember({ firstName, lastName, phone: normalizedPhone, password, passwordConfirmation, role });
       resetForm();
-      router.replace("/(admin)/members");
+      router.back();
     } catch (submissionError) {
       setError(await getFunctionErrorMessage(submissionError) === "Ce numéro est déjà associé à un compte." ? "Ce numéro est déjà associé à un compte." : "Impossible d’ajouter ce membre.");
     } finally {
@@ -63,8 +63,8 @@ export default function NewAdminMember() {
             <Field icon="phone"><TextInput value={phone} onChangeText={setPhone} placeholder="Téléphone" placeholderTextColor="#788798" style={styles.input} editable={!submitting} keyboardType="phone-pad" /></Field>
             <Field icon="lock"><TextInput value={password} onChangeText={setPassword} placeholder="Mot de passe initial" placeholderTextColor="#788798" style={styles.input} editable={!submitting} secureTextEntry autoCapitalize="none" /></Field>
             <Field icon="lock"><TextInput value={passwordConfirmation} onChangeText={setPasswordConfirmation} placeholder="Confirmation du mot de passe" placeholderTextColor="#788798" style={styles.input} editable={!submitting} secureTextEntry autoCapitalize="none" /></Field>
-            <View style={styles.roleRow}>{(["member", "admin"] as const).map((value) => <Pressable key={value} disabled={submitting} onPress={() => setRole(value)} style={[styles.roleChoice, role === value && styles.roleChoiceActive]}><Text style={role === value ? styles.roleChoiceTextActive : styles.roleChoiceText}>{value === "member" ? "Membre" : "Administrateur"}</Text></Pressable>)}</View>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.roleRow}>{(["member", "admin"] as const).map((value) => <Pressable key={value} disabled={submitting} onPress={() => setRole(value)} style={[styles.roleChoice, role === value && styles.roleChoiceActive]} accessibilityRole="button" accessibilityState={{ selected: role === value }}><Text style={role === value ? styles.roleChoiceTextActive : styles.roleChoiceText}>{value === "member" ? "Membre" : "Administrateur"}</Text></Pressable>)}</View>
+            {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
             <Pressable disabled={submitting} style={[styles.submit, submitting && styles.disabled]} onPress={() => void submit()} accessibilityRole="button"><Text style={styles.submitText}>{submitting ? "Ajout…" : "Ajouter le membre"}</Text></Pressable>
           </View>
         </View>
