@@ -313,6 +313,9 @@ test('the members admin route renders the shared members chrome', async () => {
   assert.match(source, /<AdminHeader \/>/);
   assert.match(source, /<AdminNavigation active="members" \/>/);
   assert.match(source, /<Text>Membres<\/Text>/);
+  assert.match(source, /StyleSheet\.create/);
+  assert.match(source, /page:\s*\{ flex: 1, backgroundColor: "#FFF" \}/);
+  assert.match(source, /<View style=\{styles\.page\}>/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
