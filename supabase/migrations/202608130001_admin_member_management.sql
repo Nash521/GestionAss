@@ -111,6 +111,7 @@ create function public.list_admin_members(
   query text,
   payment_status text,
   role_filter text,
+  member_status_filter text,
   offset_value integer,
   limit_value integer
 )
@@ -138,6 +139,7 @@ declare
   escaped_query text;
   normalized_payment_status text := lower(btrim(coalesce(payment_status, 'all')));
   normalized_role_filter text := lower(btrim(coalesce(role_filter, 'all')));
+  normalized_member_status_filter text := lower(btrim(coalesce(member_status_filter, 'all')));
 begin
   select organization_id
   into admin_organization_id
@@ -156,6 +158,10 @@ begin
 
   if normalized_role_filter not in ('all', 'member', 'admin') then
     raise exception 'Invalid role filter';
+  end if;
+
+  if normalized_member_status_filter not in ('all', 'pending_membership', 'active', 'suspended', 'removed') then
+    raise exception 'Invalid member status';
   end if;
 
   if offset_value is null or offset_value < 0 then
@@ -192,11 +198,12 @@ begin
       )
       and (normalized_payment_status = 'all' or f.status::text = normalized_payment_status)
       and (normalized_role_filter = 'all' or u.role::text = normalized_role_filter)
+      and (normalized_member_status_filter = 'all' or m.status::text = normalized_member_status_filter)
   ),
   summary as (
     select
       count(*) as total_members,
-      count(*) filter (where fee_status = 'paid') as members_paid,
+      count(*) filter (where fee_status is null or fee_status = 'paid') as members_paid,
       count(*) filter (where fee_status in ('unpaid', 'partial')) as members_late
     from filtered
   ),
@@ -227,5 +234,5 @@ $$;
 
 revoke all on function public.provision_admin_member(uuid, uuid, text, text, text, public.account_role) from public;
 grant execute on function public.provision_admin_member(uuid, uuid, text, text, text, public.account_role) to service_role;
-revoke all on function public.list_admin_members(uuid, text, text, text, integer, integer) from public;
-grant execute on function public.list_admin_members(uuid, text, text, text, integer, integer) to service_role;
+revoke all on function public.list_admin_members(uuid, text, text, text, text, integer, integer) from public;
+grant execute on function public.list_admin_members(uuid, text, text, text, text, integer, integer) to service_role;

@@ -1,9 +1,9 @@
 begin;
 
-select plan(27);
+select plan(30);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
-select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
+select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
 select policies_are('public', 'members', array['active admin reads organization members']::name[], 'members are protected by the active-admin organization policy');
 
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -42,19 +42,23 @@ insert into public.membership_fees (member_id, amount_due, amount_paid, remainin
   ('43000000-0000-0000-0000-000000000002', 1000, 400, 600, 'partial'),
   ('43000000-0000-0000-0000-000000000003', 1500, 0, 1500, 'unpaid');
 
-select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50)), 3::bigint, 'listing is isolated to the caller organization and includes members without fees');
-select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50) limit 1), 3::bigint, 'listing returns the organization total');
-select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing counts partial membership fees as late');
-select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');
-select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'partial', 'admin', 0, 50)), 1::bigint, 'listing combines payment and role filters');
-select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '%_', 'all', 'all', 0, 50)), 1::bigint, 'listing treats percent and underscore search characters literally');
-select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', E'\\', 'all', 'all', 0, 50)), 1::bigint, 'listing treats a backslash search character literally');
-select is((select fee_status is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'percent', 'all', 'all', 0, 50)), true, 'listing exposes a member with no membership fee');
-select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 99, 50)), 3::bigint, 'an empty page preserves summary metadata');
-select ok((select member_id is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 99, 50)), 'an empty page returns a metadata-only row');
-select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'late', 'all', 0, 50) $$, 'Invalid payment status', 'invalid payment status is rejected');
-select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'owner', 0, 50) $$, 'Invalid role filter', 'invalid role filter is rejected');
-select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 51) $$, 'Limit must be between 1 and 50', 'out-of-range page limit is rejected');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50)), 3::bigint, 'listing is isolated to the caller organization and includes members without fees');
+select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 3::bigint, 'listing returns the organization total');
+select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing counts partial membership fees as late');
+select is((select members_paid from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 2::bigint, 'listing counts members without fees as current');
+update public.members set status = 'suspended' where id = '43000000-0000-0000-0000-000000000002';
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'suspended', 0, 50)), 1::bigint, 'listing filters members by member status');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'partial', 'admin', 'all', 0, 50)), 1::bigint, 'listing combines payment and role filters');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '%_', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing treats percent and underscore search characters literally');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', E'\\', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing treats a backslash search character literally');
+select is((select fee_status is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'percent', 'all', 'all', 'all', 0, 50)), true, 'listing exposes a member with no membership fee');
+select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 99, 50)), 3::bigint, 'an empty page preserves summary metadata');
+select ok((select member_id is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 99, 50)), 'an empty page returns a metadata-only row');
+select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'late', 'all', 'all', 0, 50) $$, 'Invalid payment status', 'invalid payment status is rejected');
+select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'owner', 'all', 0, 50) $$, 'Invalid role filter', 'invalid role filter is rejected');
+select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 51) $$, 'Limit must be between 1 and 50', 'out-of-range page limit is rejected');
+select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'archived', 0, 50) $$, 'Invalid member status', 'invalid member status is rejected');
 
 insert into public.users (id, organization_id, role, is_active) values
   ('41000000-0000-0000-0000-000000000007', '42000000-0000-0000-0000-000000000002', 'member', true);
