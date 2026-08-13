@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { ImageBackground, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
-import { AdminMember, AdminMembersPage, createAdminMember, getAdminMembers } from "../../src/lib/supabase";
+import { AdminMember, AdminMembersPage, createAdminMember, getAdminMembers, getFunctionErrorMessage } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
 const emptyPage: AdminMembersPage = { totalMembers: 0, membersLate: 0, membersPaid: 0, members: [] };
@@ -41,7 +41,7 @@ export default function AdminMembers() {
       const normalizedPhone = phone.startsWith("+225") ? phone : `+225${phone}`;
       await createAdminMember({ firstName, lastName, phone: normalizedPhone, password, passwordConfirmation, role: formRole });
       resetForm(); setShowForm(false); await loadMembers(0);
-    } catch { setFormError("Impossible d’ajouter ce membre."); }
+    } catch (error) { setFormError(await getFunctionErrorMessage(error) === "Ce numéro est déjà associé à un compte." ? "Ce numéro est déjà associé à un compte." : "Impossible d’ajouter ce membre."); }
     finally { setSubmitting(false); }
   };
   const filter = <T extends string>(current: T, change: (value: T) => void, labels: Record<T, string>) => <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{(Object.keys(labels) as T[]).map((value) => <Pressable key={value} style={[styles.filter, current === value && styles.filterActive]} onPress={() => change(value)}><Text style={[styles.filterText, current === value && styles.filterTextActive]}>{labels[value]}</Text></Pressable>)}</ScrollView>;

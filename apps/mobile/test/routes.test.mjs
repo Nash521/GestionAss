@@ -139,6 +139,10 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /Approuver/);
   assert.match(source, /Refuser/);
   assert.match(source, /decide-membership-request/);
+  assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminNavigation active="members" \/>/);
+  assert.match(source, /paddingBottom: 104/);
 });
 
 test('the home screen exposes the admin request route only after checking the account role', async () => {
@@ -325,6 +329,8 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(source, /Confirmation du mot de passe/);
   assert.match(source, /getAdminMembers/);
   assert.match(source, /createAdminMember/);
+  assert.match(source, /getFunctionErrorMessage/);
+  assert.match(source, /Ce numéro est déjà associé à un compte\./);
   assert.match(source, /memberStatus/);
   assert.match(source, /Partiellement r\u00e9gl\u00e9e/);
   assert.match(source, /useRef\(0\)/, 'member requests have a sequence counter');
@@ -345,6 +351,8 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(supabase, /export type AdminMembersPage/);
   assert.match(supabase, /"get-admin-members"/);
   assert.match(supabase, /"create-admin-member"/);
+  assert.match(supabase, /export async function getFunctionErrorMessage/);
+  assert.match(supabase, /response\.clone\(\)\.json\(\)/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {

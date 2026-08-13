@@ -17,6 +17,16 @@ export async function invokeRegistrationFunction<T>(name: string, body: Record<s
   return data;
 }
 
+export async function getFunctionErrorMessage(error: unknown) {
+  const context = typeof error === "object" && error !== null ? (error as { context?: unknown }).context : null;
+  if (!context || typeof context !== "object" || !("clone" in context)) return null;
+  try {
+    const response = context as { clone: () => { json: () => Promise<unknown> } };
+    const body = await response.clone().json();
+    return typeof body === "object" && body !== null && typeof (body as { error?: unknown }).error === "string" ? (body as { error: string }).error : null;
+  } catch { return null; }
+}
+
 export type SessionDestination = "pending" | "active" | "unavailable";
 export type AccountRole = "admin" | "member";
 
