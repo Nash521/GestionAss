@@ -106,6 +106,8 @@ begin
 end;
 $$;
 
+drop function if exists public.list_admin_members(uuid, text, text, text, integer, integer);
+
 create function public.list_admin_members(
   admin_id uuid,
   query text,

@@ -96,8 +96,8 @@ select throws_ok(
 
 select ok(not has_function_privilege('anon', 'public.provision_admin_member(uuid, uuid, text, text, text, public.account_role)', 'execute'), 'anon cannot provision members');
 select ok(has_function_privilege('service_role', 'public.provision_admin_member(uuid, uuid, text, text, text, public.account_role)', 'execute'), 'service role can provision members');
-select ok(not has_function_privilege('authenticated', 'public.list_admin_members(uuid, text, text, text, integer, integer)', 'execute'), 'authenticated cannot list members through the service RPC');
-select ok(has_function_privilege('service_role', 'public.list_admin_members(uuid, text, text, text, integer, integer)', 'execute'), 'service role can list members through the service RPC');
+select ok(not has_function_privilege('authenticated', 'public.list_admin_members(uuid, text, text, text, text, integer, integer)', 'execute'), 'authenticated cannot list members through the service RPC');
+select ok(has_function_privilege('service_role', 'public.list_admin_members(uuid, text, text, text, text, integer, integer)', 'execute'), 'service role can list members through the service RPC');
 
 select * from finish();
 rollback;
