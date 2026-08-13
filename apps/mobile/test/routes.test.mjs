@@ -355,6 +355,14 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(supabase, /response\.clone\(\)\.json\(\)/);
 });
 
+test('the member filters wrap into visible rows on narrow screens', async () => {
+  const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /<View style=\{styles\.filterRow\}>/);
+  assert.match(source, /filterRow:\s*\{[^}]*flexWrap:\s*"wrap"/);
+  assert.doesNotMatch(source, /<ScrollView\s+horizontal[^>]*contentContainerStyle=\{styles\.filterRow\}/);
+});
+
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
   const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
   assert.match(source, /const normalizedPhone = phone\.startsWith\("\+225"\) \? phone : `\+225\$\{phone\}`/);
