@@ -37,7 +37,7 @@ begin
     raise exception 'Unauthorized';
   end if;
 
-  if requested_role not in ('member', 'admin') then
+  if requested_role is null or requested_role not in ('member', 'admin') then
     raise exception 'Invalid role';
   end if;
 
@@ -64,7 +64,7 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended(admin_organization_id::text, 0));
 
-  select 'M-' || lpad((coalesce(max(substring(member_number from 3)::integer), 0) + 1)::text, 6, '0')
+  select 'M-' || lpad((coalesce(max(substring(member_number from 3)::integer) filter (where member_number ~ '^M-[0-9]{1,6}$'), 0) + 1)::text, 6, '0')
   into next_number
   from public.members
   where organization_id = admin_organization_id;
@@ -118,6 +118,7 @@ as $$
 declare
   admin_organization_id uuid;
   normalized_query text := lower(btrim(coalesce(query, '')));
+  escaped_query text;
   normalized_payment_status text := lower(btrim(coalesce(payment_status, 'all')));
   normalized_role_filter text := lower(btrim(coalesce(role_filter, 'all')));
 begin
@@ -148,6 +149,8 @@ begin
     raise exception 'Limit must be between 1 and 50';
   end if;
 
+  escaped_query := replace(replace(replace(normalized_query, E'\\', E'\\\\'), '%', E'\\%'), '_', E'\\_');
+
   return query
   with filtered as (
     select
@@ -162,34 +165,46 @@ begin
       f.remaining_amount
     from public.members m
     join public.users u on u.id = m.user_id and u.organization_id = m.organization_id
-    join public.membership_fees f on f.member_id = m.id
+    left join public.membership_fees f on f.member_id = m.id
     where m.organization_id = admin_organization_id
       and (
         normalized_query = ''
-        or lower(m.first_name) like '%' || normalized_query || '%'
-        or lower(m.last_name) like '%' || normalized_query || '%'
-        or lower(m.phone) like '%' || normalized_query || '%'
+        or lower(m.first_name) like '%' || escaped_query || '%' escape E'\\'
+        or lower(m.last_name) like '%' || escaped_query || '%' escape E'\\'
+        or lower(m.phone) like '%' || escaped_query || '%' escape E'\\'
       )
       and (normalized_payment_status = 'all' or f.status::text = normalized_payment_status)
       and (normalized_role_filter = 'all' or u.role::text = normalized_role_filter)
+  ),
+  summary as (
+    select
+      count(*) as total_members,
+      count(*) filter (where fee_status = 'paid') as members_paid,
+      count(*) filter (where fee_status = 'unpaid') as members_late
+    from filtered
+  ),
+  paged as (
+    select *
+    from filtered
+    order by member_number
+    offset offset_value
+    limit limit_value
   )
   select
-    filtered.member_id,
-    filtered.user_id,
-    filtered.member_number,
-    filtered.first_name,
-    filtered.last_name,
-    filtered.phone,
-    filtered.role,
-    filtered.fee_status,
-    filtered.remaining_amount,
-    count(*) over () as total_members,
-    count(*) filter (where filtered.fee_status = 'paid') over () as members_paid,
-    count(*) filter (where filtered.fee_status = 'unpaid') over () as members_late
-  from filtered
-  order by filtered.member_number
-  offset offset_value
-  limit limit_value;
+    paged.member_id,
+    paged.user_id,
+    paged.member_number,
+    paged.first_name,
+    paged.last_name,
+    paged.phone,
+    paged.role,
+    paged.fee_status,
+    paged.remaining_amount,
+    summary.total_members,
+    summary.members_paid,
+    summary.members_late
+  from summary
+  left join paged on true;
 end;
 $$;
 
