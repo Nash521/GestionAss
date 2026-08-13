@@ -141,7 +141,7 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /decide-membership-request/);
   assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
   assert.match(source, /<AdminHeader \/>/);
-  assert.match(source, /<AdminNavigation active="members" \/>/);
+  assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /paddingBottom: 104/);
 });
 
@@ -301,13 +301,23 @@ test('the admin dashboard composes shared animated chrome with literal section r
 
   assert.match(dashboard, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
   assert.match(dashboard, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
-  assert.match(dashboard, /<AdminNavigation active="dashboard" translateY=\{navTranslateY\} \/>/);
+  assert.doesNotMatch(dashboard, /<AdminNavigation/);
   assert.match(chrome, /export type AdminSection = "dashboard" \| "members" \| "finances"/);
   assert.match(chrome, /translateY \? Animated\.View : View/);
   assert.match(chrome, /Alert\.alert\("Bientôt disponible", "Cette fonctionnalité arrive prochainement\."\)/);
   assert.match(chrome, /active === section \? "#00A99D" : "#65758A"/);
   assert.match(chrome, /router\.replace\("\/\(admin\)\/dashboard"\)/);
   assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
+});
+
+test('the admin layout owns persistent navigation and defers member creation to its child route', async () => {
+  const source = await readFile(new URL('../app/(admin)/_layout.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /import \{ Slot, usePathname \} from "expo-router"/);
+  assert.match(source, /<Slot \/>/);
+  assert.match(source, /<AdminNavigation active=\{activeSection\} \/>/);
+  assert.match(source, /pathname\.endsWith\("\/members\/new"\)/);
+  assert.match(source, /return <Slot \/>;/);
 });
 
 test('the member page provides administration, filters, and an entry point to account creation', async () => {
@@ -320,7 +330,7 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView/);
   assert.match(source, /<AdminHeader \/>/);
-  assert.match(source, /<AdminNavigation active="members" \/>/);
+  assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /Rechercher un nom, t\u00e9l\u00e9phone/);
   assert.match(source, /Tous les statuts/);
   assert.match(source, /Toutes les cotisations/);
