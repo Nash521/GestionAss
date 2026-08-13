@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Alert, Animated, Image, ImageBackground, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
+import { AdminHeader } from "../../src/components/admin-chrome";
 import { DashboardSummary, getAdminDashboard } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -14,15 +14,11 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardSummary | null>(null); const [error, setError] = useState(false);
   const previousOffset = useRef(0);
   const headerTranslateY = useRef(new Animated.Value(0)).current;
-  const navTranslateY = useRef(new Animated.Value(0)).current;
   const chromeVisible = useRef(true);
   const animateChrome = (visible: boolean) => {
     if (chromeVisible.current === visible) return;
     chromeVisible.current = visible;
-    Animated.parallel([
-      Animated.timing(headerTranslateY, { toValue: visible ? 0 : -120, duration: 200, useNativeDriver: true }),
-      Animated.timing(navTranslateY, { toValue: visible ? 0 : 100, duration: 200, useNativeDriver: true }),
-    ]).start();
+    Animated.timing(headerTranslateY, { toValue: visible ? 0 : -120, duration: 200, useNativeDriver: true }).start();
   };
   const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offset = Math.max(0, nativeEvent.contentOffset.y); const delta = offset - previousOffset.current;
@@ -43,7 +39,6 @@ export default function AdminDashboard() {
     <View style={styles.panel}><View style={styles.panelHead}><Text style={styles.panelTitle}>Dernières transactions</Text><Pressable onPress={soon}><Text style={styles.link}>Voir tout  →</Text></Pressable></View><View style={styles.transaction}><Feather name="activity" size={25} color="#00A99D" /><View><Text style={styles.emptyTitle}>Aucune transaction</Text><Text style={styles.emptyText}>Le module Finances sera bientôt disponible.</Text></View></View></View>
   </View></ImageBackground></ScrollView>
     <AdminHeader translateY={headerTranslateY} />
-    <AdminNavigation active="dashboard" translateY={navTranslateY} />
   </View>;
 }
 const styles = StyleSheet.create({

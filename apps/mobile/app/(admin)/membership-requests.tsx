@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
+import { AdminHeader } from "../../src/components/admin-chrome";
 import { getSupabaseClient, invokeRegistrationFunction } from "../../src/lib/supabase";
 
 type Request = { id: string; first_name: string; last_name: string; phone: string; submitted_at: string };
@@ -37,7 +37,7 @@ export default function MembershipRequests() {
         <Pressable style={styles.approve} onPress={() => Alert.alert("Approuver ?", `Valider ${item.first_name} ${item.last_name} ?`, [{ text: "Annuler", style: "cancel" }, { text: "Approuver", onPress: () => { void decide(item.id, "approved"); } }])} disabled={busyId === item.id}><Text style={styles.approveLabel}>Approuver</Text></Pressable>
         <Pressable style={styles.refuse} onPress={() => setRejectingId(item.id)} disabled={busyId === item.id}><Text style={styles.refuseLabel}>Refuser</Text></Pressable>
       </View>}
-    </View>} /><AdminHeader /><AdminNavigation active="members" />
+    </View>} /><AdminHeader />
   </View>;
 }
 

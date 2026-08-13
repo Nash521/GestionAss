@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
+import { AdminHeader } from "../../src/components/admin-chrome";
 import { AdminMember, AdminMembersPage, getAdminMembers } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -51,7 +51,7 @@ export default function AdminMembers() {
       {filter(memberStatus, setMemberStatus, statusLabels)}{filter(paymentStatus, setPaymentStatus, paymentLabels)}{filter(role, setRole, roleLabels)}
       <View style={styles.list}>{loading ? <Text style={styles.message}>Chargement des membres…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les membres.</Text><Pressable onPress={() => void loadMembers(0)}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : members.length === 0 ? <Text style={styles.message}>Aucun membre ne correspond à votre recherche.</Text> : <>{members.map((member) => <MemberCard key={member.id} member={member} />)}{members.length < page.totalMembers ? <Pressable disabled={loadingMore} style={[styles.more, loadingMore && styles.disabled]} onPress={() => void loadMembers(members.length)}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus"}</Text></Pressable> : null}</>}</View>
     </View></ImageBackground></ScrollView>
-    <AdminHeader /><AdminNavigation active="members" />
+    <AdminHeader />
   </View>;
 }
 
