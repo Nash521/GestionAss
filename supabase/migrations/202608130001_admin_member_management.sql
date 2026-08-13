@@ -22,6 +22,7 @@ declare
   existing_organization_id uuid;
   new_member_id uuid;
   next_number text;
+  highest_member_number integer;
   normalized_first_name text := btrim(coalesce(first_name, ''));
   normalized_last_name text := btrim(coalesce(last_name, ''));
   normalized_phone text := btrim(coalesce(phone, ''));
@@ -64,10 +65,26 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended(admin_organization_id::text, 0));
 
-  select 'M-' || lpad((coalesce(max(substring(member_number from 3)::integer) filter (where member_number ~ '^M-[0-9]{1,6}$'), 0) + 1)::text, 6, '0')
-  into next_number
+  if exists (
+    select 1
+    from public.members
+    where organization_id = admin_organization_id
+      and member_number ~ '^M-[0-9]+$'
+      and length(substring(member_number from 3)) > 6
+  ) then
+    raise exception 'Member number limit reached';
+  end if;
+
+  select max(substring(member_number from 3)::integer) filter (where member_number ~ '^M-[0-9]{1,6}$')
+  into highest_member_number
   from public.members
   where organization_id = admin_organization_id;
+
+  if coalesce(highest_member_number, 0) >= 999999 then
+    raise exception 'Member number limit reached';
+  end if;
+
+  next_number := 'M-' || lpad((coalesce(highest_member_number, 0) + 1)::text, 6, '0');
 
   insert into public.users (id, organization_id, role, is_active)
   values (new_user_id, admin_organization_id, requested_role, true);

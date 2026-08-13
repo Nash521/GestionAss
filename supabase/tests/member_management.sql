@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(26);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -15,7 +15,9 @@ values
   ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'other@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000006', 'authenticated', 'authenticated', 'new@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000007', 'authenticated', 'authenticated', 'rejected@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000008', 'authenticated', 'authenticated', 'legacy@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now());
+  ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000008', 'authenticated', 'authenticated', 'legacy@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000009', 'authenticated', 'authenticated', 'limit-existing@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '41000000-0000-0000-0000-000000000010', 'authenticated', 'authenticated', 'limit-new@example.test', 'not-used', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now());
 
 insert into public.organizations (id, name, membership_fee_amount) values
   ('42000000-0000-0000-0000-000000000001', 'Organisation membres une', 1000),
@@ -33,7 +35,7 @@ insert into public.members (id, organization_id, user_id, member_number, first_n
   ('43000000-0000-0000-0000-000000000001', '42000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000003', 'M-000001', 'Awa', 'Kone', '+2250700000001', 'active', '41000000-0000-0000-0000-000000000001'),
   ('43000000-0000-0000-0000-000000000002', '42000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000004', 'M-000002', 'Idriss', 'Nguessan', '+2250500000002', 'active', '41000000-0000-0000-0000-000000000001'),
   ('43000000-0000-0000-0000-000000000003', '42000000-0000-0000-0000-000000000002', '41000000-0000-0000-0000-000000000005', 'M-000001', 'Mariam', 'Traore', '+2250100000003', 'active', '41000000-0000-0000-0000-000000000002'),
-  ('43000000-0000-0000-0000-000000000004', '42000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000008', 'LEGACY-%_ID', 'Percent%_Name', 'SansFrais', '+2250700000008', 'active', '41000000-0000-0000-0000-000000000001');
+  ('43000000-0000-0000-0000-000000000004', '42000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000008', 'LEGACY-%_ID', 'Percent%_Name', 'Sans\\Frais', '+2250700000008', 'active', '41000000-0000-0000-0000-000000000001');
 
 insert into public.membership_fees (member_id, amount_due, amount_paid, remaining_amount, status) values
   ('43000000-0000-0000-0000-000000000001', 1000, 1000, 0, 'paid'),
@@ -45,7 +47,8 @@ select is((select total_members from public.list_admin_members('41000000-0000-00
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'partial', 'admin', 0, 50)), 1::bigint, 'listing combines payment and role filters');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '%_', 'all', 'all', 0, 50)), 1::bigint, 'listing treats percent and underscore search characters literally');
-select is((select fee_status is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'sansfrais', 'all', 'all', 0, 50)), true, 'listing exposes a member with no membership fee');
+select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', E'\\', 'all', 'all', 0, 50)), 1::bigint, 'listing treats a backslash search character literally');
+select is((select fee_status is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'percent', 'all', 'all', 0, 50)), true, 'listing exposes a member with no membership fee');
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 99, 50)), 3::bigint, 'an empty page preserves summary metadata');
 select ok((select member_id is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 99, 50)), 'an empty page returns a metadata-only row');
 select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'late', 'all', 0, 50) $$, 'Invalid payment status', 'invalid payment status is rejected');
@@ -75,6 +78,16 @@ select is(
 select is((select member_number from public.members where user_id = '41000000-0000-0000-0000-000000000006'), 'M-000003', 'provisioning assigns the next number within the organization');
 select ok((select is_active and role = 'member' from public.users where id = '41000000-0000-0000-0000-000000000006'), 'provisioning creates an active application user');
 select ok(exists (select 1 from public.membership_fees f join public.members m on m.id = f.member_id where m.user_id = '41000000-0000-0000-0000-000000000006' and f.amount_due = 1000 and f.status = 'unpaid'), 'provisioning creates the organization membership fee');
+
+insert into public.users (id, organization_id, role, is_active)
+values ('41000000-0000-0000-0000-000000000009', '42000000-0000-0000-0000-000000000001', 'member', true);
+insert into public.members (id, organization_id, user_id, member_number, first_name, last_name, phone, status, created_by)
+values ('43000000-0000-0000-0000-000000000009', '42000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000009', 'M-1000000', 'Numero', 'Limite', '+2250700000009', 'active', '41000000-0000-0000-0000-000000000001');
+select throws_ok(
+  $$ select public.provision_admin_member('41000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000010', 'Au', 'Dela', '+2250700000010', 'member') $$,
+  'Member number limit reached',
+  'provisioning rejects legacy M-numbers beyond the supported six-digit range'
+);
 
 select ok(not has_function_privilege('anon', 'public.provision_admin_member(uuid, uuid, text, text, text, public.account_role)', 'execute'), 'anon cannot provision members');
 select ok(has_function_privilege('service_role', 'public.provision_admin_member(uuid, uuid, text, text, text, public.account_role)', 'execute'), 'service role can provision members');
