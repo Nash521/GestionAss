@@ -310,8 +310,9 @@ test('the admin dashboard composes shared animated chrome with literal section r
   assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
 });
 
-test('the member page provides administration, filters, and direct account creation', async () => {
+test('the member page provides administration, filters, and an entry point to account creation', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
+  const newMember = await readFile(new URL('../app/(admin)/members/new.tsx', import.meta.url), 'utf8');
   const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
 
   assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
@@ -325,12 +326,9 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(source, /Toutes les cotisations/);
   assert.match(source, /Tous les r\u00f4les/);
   assert.match(source, /Ajouter un membre/);
-  assert.match(source, /Mot de passe initial/);
-  assert.match(source, /Confirmation du mot de passe/);
+  assert.match(source, /router\.push\("\/\(admin\)\/members\/new"\)/);
+  assert.doesNotMatch(source, /<Modal visible=\{showForm\}/);
   assert.match(source, /getAdminMembers/);
-  assert.match(source, /createAdminMember/);
-  assert.match(source, /getFunctionErrorMessage/);
-  assert.match(source, /Ce numéro est déjà associé à un compte\./);
   assert.match(source, /memberStatus/);
   assert.match(source, /Partiellement r\u00e9gl\u00e9e/);
   assert.match(source, /useRef\(0\)/, 'member requests have a sequence counter');
@@ -343,10 +341,17 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(source, /label: "En attente"/);
   assert.match(source, /label: "Suspendu"/);
   assert.match(source, /label: "Supprimé"/);
-  assert.match(source, /<ScrollView[^>]*style=\{styles\.modalScroll\}/);
-  assert.match(source, /keyboardShouldPersistTaps="handled"/);
-  assert.match(source, /<KeyboardAvoidingView[^>]*behavior=\{Platform\.OS === "ios" \? "padding" : undefined\}/);
   assert.match(source, /setTimeout\(\(\) => \{[^}]*loadMembers/, 'search is debounced before loading members');
+  assert.match(newMember, /Ajouter un membre/);
+  assert.match(newMember, /router\.back\(\)/);
+  assert.match(newMember, /createAdminMember/);
+  assert.match(newMember, /Mot de passe initial/);
+  assert.match(newMember, /Confirmation du mot de passe/);
+  assert.match(newMember, /KeyboardSafeScreen/);
+  assert.doesNotMatch(newMember, /AdminNavigation/);
+  assert.match(newMember, /router\.replace\("\/\(admin\)\/members"\)/);
+  assert.match(newMember, /getFunctionErrorMessage/);
+  assert.match(newMember, /Ce numéro est déjà associé à un compte\./);
   assert.match(supabase, /export type AdminMember/);
   assert.match(supabase, /export type AdminMembersPage/);
   assert.match(supabase, /"get-admin-members"/);
