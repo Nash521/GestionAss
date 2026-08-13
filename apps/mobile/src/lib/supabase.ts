@@ -56,12 +56,14 @@ export type AdminMembersFilters = {
   memberStatus?: "all" | AdminMember["memberStatus"];
   paymentStatus?: "all" | AdminMember["paymentStatus"];
   role?: "all" | AccountRole;
+  offset?: number;
+  limit?: number;
 };
 
 export function getAdminMembers(filters: AdminMembersFilters = {}) {
   return invokeRegistrationFunction<AdminMembersPage>("get-admin-members", {
     query: filters.query ?? "", memberStatus: filters.memberStatus ?? "all",
-    paymentStatus: filters.paymentStatus ?? "all", role: filters.role ?? "all", offset: 0, limit: 50,
+    paymentStatus: filters.paymentStatus ?? "all", role: filters.role ?? "all", offset: filters.offset ?? 0, limit: filters.limit ?? 50,
   });
 }
 

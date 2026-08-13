@@ -327,6 +327,16 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(source, /createAdminMember/);
   assert.match(source, /memberStatus/);
   assert.match(source, /Partiellement r\u00e9gl\u00e9e/);
+  assert.match(source, /useRef\(0\)/, 'member requests have a sequence counter');
+  assert.match(source, /requestId !== requestSequence\.current/, 'stale member responses are ignored');
+  assert.match(supabase, /offset\??:\s*number/);
+  assert.match(supabase, /offset: filters\.offset \?\? 0/);
+  assert.match(supabase, /limit: filters\.limit \?\? 50/);
+  assert.match(source, /Voir plus/);
+  assert.match(source, /label: "En attente"/);
+  assert.match(source, /label: "Suspendu"/);
+  assert.match(source, /label: "Supprimé"/);
+  assert.match(source, /<ScrollView[^>]*style=\{styles\.modalScroll\}/);
   assert.match(source, /setTimeout\(\(\) => \{[^}]*loadMembers/, 'search is debounced before loading members');
   assert.match(supabase, /export type AdminMember/);
   assert.match(supabase, /export type AdminMembersPage/);
