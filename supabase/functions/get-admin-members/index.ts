@@ -4,7 +4,7 @@ const headers = { "Content-Type": "application/json", "Access-Control-Allow-Orig
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
 type ListRequest = { query: string; paymentStatus: "all" | "paid" | "unpaid" | "partial"; role: "all" | "member" | "admin"; memberStatus: "all" | "pending_membership" | "active" | "suspended" | "removed"; offset: number; limit: number };
-type RpcRow = { member_id: string | null; first_name: string | null; last_name: string | null; phone: string | null; role: "member" | "admin" | null; fee_status: "paid" | "unpaid" | "partial" | null; remaining_amount: number | string | null; total_members: number | string | null; members_paid: number | string | null; members_late: number | string | null };
+type RpcRow = { member_id: string | null; first_name: string | null; last_name: string | null; phone: string | null; role: "member" | "admin" | null; member_status: "pending_membership" | "active" | "suspended" | "removed" | null; fee_status: "paid" | "unpaid" | "partial" | null; remaining_amount: number | string | null; total_members: number | string | null; members_paid: number | string | null; members_late: number | string | null };
 
 const parseRequest = (body: unknown): ListRequest | null => {
   if (!body || typeof body !== "object") return null;
@@ -45,7 +45,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
       totalMembers: count(metadata?.total_members), membersLate: count(metadata?.members_late), membersPaid: count(metadata?.members_paid),
       members: rows.filter((row) => row.member_id !== null).map((row) => ({
         id: row.member_id!, firstName: row.first_name, lastName: row.last_name, phone: row.phone,
-        role: row.role, paymentStatus: row.fee_status, amountRemaining: row.remaining_amount === null ? null : Number(row.remaining_amount),
+        role: row.role, memberStatus: row.member_status, paymentStatus: row.fee_status, amountRemaining: row.remaining_amount === null ? null : Number(row.remaining_amount),
       })),
     });
   } catch {

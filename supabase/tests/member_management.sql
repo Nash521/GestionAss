@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(31);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -46,6 +46,7 @@ select is((select count(*) from public.list_admin_members('41000000-0000-0000-00
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 3::bigint, 'listing returns the organization total');
 select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing counts partial membership fees as late');
 select is((select members_paid from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 2::bigint, 'listing counts members without fees as current');
+select is((select member_status from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 'active'::public.member_status, 'listing returns each member status');
 update public.members set status = 'suspended' where id = '43000000-0000-0000-0000-000000000002';
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'suspended', 0, 50)), 1::bigint, 'listing filters members by member status');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');

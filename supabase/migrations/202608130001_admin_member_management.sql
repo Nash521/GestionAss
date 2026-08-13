@@ -125,6 +125,7 @@ returns table (
   last_name text,
   phone text,
   role public.account_role,
+  member_status public.member_status,
   fee_status public.membership_fee_status,
   remaining_amount numeric,
   total_members bigint,
@@ -186,6 +187,7 @@ begin
       m.last_name,
       m.phone,
       u.role,
+      m.status as member_status,
       f.status as fee_status,
       f.remaining_amount
     from public.members m
@@ -224,6 +226,7 @@ begin
     paged.last_name,
     paged.phone,
     paged.role,
+    paged.member_status,
     paged.fee_status,
     paged.remaining_amount,
     summary.total_members,

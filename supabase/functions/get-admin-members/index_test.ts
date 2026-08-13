@@ -119,7 +119,7 @@ Deno.test({
       const request = (body: Record<string, unknown>) => fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${login.session!.access_token}`, "content-type": "application/json" }, body: JSON.stringify(body) });
       const search = await request({ query: "Koffi" });
       const searchBody = await search.json();
-      if (search.status !== 200 || searchBody.totalMembers !== 1 || searchBody.members.length !== 1 || searchBody.members[0].id !== koffiId || searchBody.membersPaid !== 1) throw new Error("search did not isolate or summarize members");
+      if (search.status !== 200 || searchBody.totalMembers !== 1 || searchBody.members.length !== 1 || searchBody.members[0].id !== koffiId || searchBody.members[0].memberStatus !== "active" || searchBody.membersPaid !== 1) throw new Error("search did not isolate, serialize status, or summarize members");
       const empty = await request({ offset: 99 });
       const emptyBody = await empty.json();
       if (empty.status !== 200 || emptyBody.totalMembers !== 1 || emptyBody.members.length !== 0 || emptyBody.membersPaid !== 1 || emptyBody.membersLate !== 0) throw new Error("empty page lost summary metadata");
