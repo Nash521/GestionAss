@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(27);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -44,6 +44,7 @@ insert into public.membership_fees (member_id, amount_due, amount_paid, remainin
 
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50)), 3::bigint, 'listing is isolated to the caller organization and includes members without fees');
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50) limit 1), 3::bigint, 'listing returns the organization total');
+select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing counts partial membership fees as late');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'partial', 'admin', 0, 50)), 1::bigint, 'listing combines payment and role filters');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '%_', 'all', 'all', 0, 50)), 1::bigint, 'listing treats percent and underscore search characters literally');

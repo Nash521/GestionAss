@@ -197,7 +197,7 @@ begin
     select
       count(*) as total_members,
       count(*) filter (where fee_status = 'paid') as members_paid,
-      count(*) filter (where fee_status = 'unpaid') as members_late
+      count(*) filter (where fee_status in ('unpaid', 'partial')) as members_late
     from filtered
   ),
   paged as (
