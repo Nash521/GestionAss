@@ -27,6 +27,24 @@ Deno.test("get-admin-members rejects invalid filters before calling Supabase", a
   } finally { stop(child); }
 });
 
+Deno.test("get-admin-members returns 503 when its Supabase dependency is unavailable", async () => {
+  const child = start({ SUPABASE_URL: "http://127.0.0.1:1", SUPABASE_SERVICE_ROLE_KEY: "test" });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try {
+    const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: "Bearer token", "content-type": "application/json" }, body: JSON.stringify({}) });
+    if (response.status !== 503) throw new Error(`expected 503, got ${response.status}`);
+  } finally { stop(child); }
+});
+
+Deno.test("get-admin-members returns 503 when Supabase configuration is absent", async () => {
+  const child = start({ SUPABASE_URL: "", SUPABASE_SERVICE_ROLE_KEY: "" });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try {
+    const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: "Bearer token", "content-type": "application/json" }, body: JSON.stringify({}) });
+    if (response.status !== 503) throw new Error(`expected 503, got ${response.status}`);
+  } finally { stop(child); }
+});
+
 Deno.test({
   name: "get-admin-members isolates an organization and preserves empty-page summary metadata",
   ignore: !localUrl || !localServiceKey,

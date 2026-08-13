@@ -32,6 +32,28 @@ Deno.test("create-admin-member rejects an invalid or mismatched request body", a
   } finally { stop(child); }
 });
 
+Deno.test("create-admin-member returns 503 when its Supabase dependency is unavailable", async () => {
+  const child = start({ SUPABASE_URL: "http://127.0.0.1:1", SUPABASE_SERVICE_ROLE_KEY: "test" });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try {
+    const response = await fetch("http://127.0.0.1:8000", {
+      method: "POST",
+      headers: { authorization: "Bearer token", "content-type": "application/json" },
+      body: JSON.stringify({ firstName: "Awa", lastName: "Kone", phone: "+2250701020304", password: "Strong!Pass1", passwordConfirmation: "Strong!Pass1", role: "member" }),
+    });
+    if (response.status !== 503) throw new Error(`expected 503, got ${response.status}`);
+  } finally { stop(child); }
+});
+
+Deno.test("create-admin-member returns 503 when Supabase configuration is absent", async () => {
+  const child = start({ SUPABASE_URL: "", SUPABASE_SERVICE_ROLE_KEY: "" });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try {
+    const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: "Bearer token", "content-type": "application/json" }, body: JSON.stringify({ firstName: "Awa", lastName: "Kone", phone: "+2250701020304", password: "Strong!Pass1", passwordConfirmation: "Strong!Pass1", role: "member" }) });
+    if (response.status !== 503) throw new Error(`expected 503, got ${response.status}`);
+  } finally { stop(child); }
+});
+
 Deno.test({
   name: "create-admin-member removes the Auth account when provisioning fails",
   ignore: !localUrl || !localServiceKey,
@@ -54,6 +76,32 @@ Deno.test({
       const { data: users, error: usersError } = await database.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (usersError) throw usersError;
       if (users.users.some((user) => user.phone === candidatePhone)) throw new Error("failed provisioning left an Auth account");
+    } finally {
+      if (callerId) await database.auth.admin.deleteUser(callerId);
+      stop(child);
+    }
+  },
+});
+
+Deno.test({
+  name: "create-admin-member returns 401 when a valid caller is not an active admin",
+  ignore: !localUrl || !localServiceKey,
+  fn: async () => {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2?target=deno");
+    const database = createClient(localUrl!, localServiceKey!, { auth: { persistSession: false } });
+    const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8);
+    const callerPhone = `+22505${suffix}`, candidatePhone = `+22507${suffix}`;
+    let callerId: string | undefined;
+    const child = start({ SUPABASE_URL: localUrl!, SUPABASE_SERVICE_ROLE_KEY: localServiceKey! });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    try {
+      const { data: caller, error: callerError } = await database.auth.admin.createUser({ phone: callerPhone, password: "Strong!Pass1", phone_confirm: true });
+      if (callerError || !caller.user) throw callerError ?? new Error("caller creation failed");
+      callerId = caller.user.id;
+      const { data: login, error: loginError } = await database.auth.signInWithPassword({ phone: callerPhone, password: "Strong!Pass1" });
+      if (loginError || !login.session) throw loginError ?? new Error("caller login failed");
+      const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${login.session.access_token}`, "content-type": "application/json" }, body: JSON.stringify({ firstName: "Koffi", lastName: "Yao", phone: candidatePhone, password: "Member!Pass1", passwordConfirmation: "Member!Pass1", role: "member" }) });
+      if (response.status !== 401) throw new Error(`expected 401, got ${response.status}`);
     } finally {
       if (callerId) await database.auth.admin.deleteUser(callerId);
       stop(child);

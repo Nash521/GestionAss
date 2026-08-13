@@ -15,6 +15,8 @@ const parseRequest = (body: unknown): ListRequest | null => {
 };
 
 const count = (value: number | string | null | undefined) => Number(value ?? 0);
+const isUnauthorized = (error: { status?: number }) => error.status === 401 || error.status === 403;
+const logOperationalFailure = (context: string) => console.error(`get-admin-members: ${context}`);
 
 Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
@@ -23,32 +25,31 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   if (!authorization) return response({ error: "Unauthorized" }, 401);
   const url = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
-  let body: unknown;
-  try { body = await request.json(); } catch { return response({ error: "Invalid request" }, 400); }
-  const input = parseRequest(body);
-  if (!input) return response({ error: "Invalid request" }, 400);
-  const database = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: identity, error: identityError } = await database.auth.getUser(authorization.replace(/^Bearer\s+/i, ""));
-  if (identityError || !identity.user) return response({ error: "Unauthorized" }, 401);
-  const { data, error } = await database.rpc("list_admin_members", {
-    admin_id: identity.user.id,
-    query: input.query,
-    payment_status: input.paymentStatus,
-    role_filter: input.role,
-    offset_value: input.offset,
-    limit_value: input.limit,
-  });
-  if (error) return response({ error: "Unable to list members" }, 400);
-  const rows = (data ?? []) as RpcRow[];
-  const metadata = rows[0];
-  return response({
-    totalMembers: count(metadata?.total_members),
-    membersLate: count(metadata?.members_late),
-    membersPaid: count(metadata?.members_paid),
-    members: rows.filter((row) => row.member_id !== null).map((row) => ({
-      id: row.member_id!, firstName: row.first_name, lastName: row.last_name, phone: row.phone,
-      role: row.role, paymentStatus: row.fee_status,
-      amountRemaining: row.remaining_amount === null ? null : Number(row.remaining_amount),
-    })),
-  });
+  try {
+    let body: unknown;
+    try { body = await request.json(); } catch { return response({ error: "Invalid request" }, 400); }
+    const input = parseRequest(body);
+    if (!input) return response({ error: "Invalid request" }, 400);
+    const database = createClient(url, serviceKey, { auth: { persistSession: false } });
+    const { data: identity, error: identityError } = await database.auth.getUser(authorization.replace(/^Bearer\s+/i, ""));
+    if (identityError) return response({ error: isUnauthorized(identityError) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(identityError) ? 401 : 503);
+    if (!identity.user) return response({ error: "Unauthorized" }, 401);
+    const { data, error } = await database.rpc("list_admin_members", {
+      admin_id: identity.user.id, query: input.query, payment_status: input.paymentStatus, role_filter: input.role,
+      offset_value: input.offset, limit_value: input.limit,
+    });
+    if (error) return response({ error: "Service unavailable" }, 503);
+    const rows = (data ?? []) as RpcRow[];
+    const metadata = rows[0];
+    return response({
+      totalMembers: count(metadata?.total_members), membersLate: count(metadata?.members_late), membersPaid: count(metadata?.members_paid),
+      members: rows.filter((row) => row.member_id !== null).map((row) => ({
+        id: row.member_id!, firstName: row.first_name, lastName: row.last_name, phone: row.phone,
+        role: row.role, paymentStatus: row.fee_status, amountRemaining: row.remaining_amount === null ? null : Number(row.remaining_amount),
+      })),
+    });
+  } catch {
+    logOperationalFailure("unexpected dependency failure");
+    return response({ error: "Service unavailable" }, 503);
+  }
 });
