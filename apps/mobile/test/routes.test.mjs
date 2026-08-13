@@ -139,7 +139,7 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /Approuver/);
   assert.match(source, /Refuser/);
   assert.match(source, /decide-membership-request/);
-  assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(source, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
   assert.match(source, /<AdminHeader \/>/);
   assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /paddingBottom: 104/);
@@ -283,7 +283,6 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /onScroll=\{handleScroll\}/);
   assert.match(source, /duration:\s*200/);
   assert.match(source, /toValue:\s*visible \? 0 : -120/);
-  assert.match(source, /toValue:\s*visible \? 0 : 100/);
 });
 
 test('the dashboard background scrolls with its content', async () => {
@@ -299,7 +298,7 @@ test('the admin dashboard composes shared animated chrome with literal section r
   const dashboard = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   const chrome = await readFile(new URL('../src/components/admin-chrome.tsx', import.meta.url), 'utf8');
 
-  assert.match(dashboard, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(dashboard, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
   assert.match(dashboard, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(dashboard, /<AdminNavigation/);
   assert.match(chrome, /export type AdminSection = "dashboard" \| "members" \| "finances"/);
@@ -325,7 +324,7 @@ test('the member page provides administration, filters, and an entry point to ac
   const newMember = await readFile(new URL('../app/(admin)/members/new.tsx', import.meta.url), 'utf8');
   const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
 
-  assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(source, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
   assert.match(source, /<ImageBackground/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView/);
