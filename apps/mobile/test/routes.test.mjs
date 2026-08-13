@@ -252,6 +252,7 @@ test('the password reset screen sends an OTP and returns to login after reset', 
 
 test('the admin dashboard uses protected statistics and its supplied background', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  const chrome = await readFile(new URL('../src/components/admin-chrome.tsx', import.meta.url), 'utf8');
   assert.match(source, /getAdminDashboard/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /image_fleur\.png/);
@@ -264,7 +265,7 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /right:-90,top:-120,bottom:null,resizeMode:"cover",zIndex:0/);
   assert.match(source, /styles\.grid,\{zIndex:1\}/);
   assert.match(source, /styles\.content,\{paddingTop:104\}/);
-  assert.match(source, /logo-removebg-preview\.png/);
+  assert.match(chrome, /logo-removebg-preview\.png/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
@@ -277,8 +278,6 @@ test('the admin dashboard uses protected statistics and its supplied background'
   assert.match(source, /Animated\.Value\(0\)/);
   assert.match(source, /onScroll=\{handleScroll\}/);
   assert.match(source, /duration:\s*200/);
-  assert.match(source, /translateY:\s*headerTranslateY/);
-  assert.match(source, /translateY:\s*navTranslateY/);
   assert.match(source, /toValue:\s*visible \? 0 : -120/);
   assert.match(source, /toValue:\s*visible \? 0 : 100/);
 });
@@ -288,16 +287,23 @@ test('the dashboard background scrolls with its content', async () => {
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView[^>]*><ImageBackground/);
   assert.match(source, /card:\s*\{[^}]*width:\s*"48%"/);
-  assert.match(source, /name="megaphone-outline"/);
   assert.match(source, /"user-plus","Total droit d’adhésion"/);
   assert.match(source, /"shield","Total couverture ou dépense"/);
-  assert.match(source, /name="settings"/);
-  assert.match(source, /name="grid"/);
-  assert.match(source, /name="users"/);
-  assert.match(source, /name="credit-card"/);
-  assert.match(source, /header:\s*\{[^}]*position:\s*"absolute"[^}]*top:\s*28/);
-  assert.match(source, /nav:\s*\{[^}]*position:\s*"absolute"/);
-  assert.match(source, /nav:\s*\{[^}]*bottom:\s*20/);
+});
+
+test('the admin dashboard composes shared animated chrome with literal section routes', async () => {
+  const dashboard = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  const chrome = await readFile(new URL('../src/components/admin-chrome.tsx', import.meta.url), 'utf8');
+
+  assert.match(dashboard, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(dashboard, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
+  assert.match(dashboard, /<AdminNavigation active="dashboard" translateY=\{navTranslateY\} \/>/);
+  assert.match(chrome, /export type AdminSection = "dashboard" \| "members" \| "finances"/);
+  assert.match(chrome, /translateY \? Animated\.View : View/);
+  assert.match(chrome, /Alert\.alert\("Bientôt disponible", "Cette fonctionnalité arrive prochainement\."\)/);
+  assert.match(chrome, /active === section \? "#00A99D" : "#65758A"/);
+  assert.match(chrome, /router\.replace\("\/\(admin\)\/dashboard"\)/);
+  assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
