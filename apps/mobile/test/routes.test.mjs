@@ -306,6 +306,15 @@ test('the admin dashboard composes shared animated chrome with literal section r
   assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
 });
 
+test('the members admin route renders the shared members chrome', async () => {
+  const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminNavigation active="members" \/>/);
+  assert.match(source, /<Text>Membres<\/Text>/);
+});
+
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
   const source = await readFile(new URL('../app/(auth)/login.tsx', import.meta.url), 'utf8');
   assert.match(source, /const normalizedPhone = phone\.startsWith\("\+225"\) \? phone : `\+225\$\{phone\}`/);
