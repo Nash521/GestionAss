@@ -55,6 +55,32 @@ Deno.test("create-admin-member returns 503 when Supabase configuration is absent
 });
 
 Deno.test({
+  name: "create-admin-member returns the French duplicate-phone message",
+  ignore: !localUrl || !localServiceKey,
+  fn: async () => {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2?target=deno");
+    const database = createClient(localUrl!, localServiceKey!, { auth: { persistSession: false } });
+    const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8), phone = `+22507${suffix}`;
+    const organizationId = crypto.randomUUID(); let adminId: string | undefined; let duplicateId: string | undefined;
+    const child = start({ SUPABASE_URL: localUrl!, SUPABASE_SERVICE_ROLE_KEY: localServiceKey! });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    try {
+      if (await database.from("organizations").insert({ id: organizationId, name: `Duplicate ${suffix}` }).then(({ error }) => error)) throw new Error("organization failed");
+      const { data: admin, error: adminError } = await database.auth.admin.createUser({ phone: `+22505${suffix}`, password: "Strong!Pass1", phone_confirm: true });
+      if (adminError || !admin.user) throw adminError ?? new Error("admin failed"); adminId = admin.user.id;
+      if (await database.from("users").insert({ id: adminId, organization_id: organizationId, role: "admin", is_active: true }).then(({ error }) => error)) throw new Error("account failed");
+      const { data: duplicate, error: duplicateError } = await database.auth.admin.createUser({ phone, password: "Strong!Pass1", phone_confirm: true });
+      if (duplicateError || !duplicate.user) throw duplicateError ?? new Error("duplicate failed"); duplicateId = duplicate.user.id;
+      const { data: login, error: loginError } = await database.auth.signInWithPassword({ phone: `+22505${suffix}`, password: "Strong!Pass1" });
+      if (loginError || !login.session) throw loginError ?? new Error("login failed");
+      const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${login.session.access_token}`, "content-type": "application/json" }, body: JSON.stringify({ firstName: "Awa", lastName: "Kone", phone, password: "Member!Pass1", passwordConfirmation: "Member!Pass1", role: "member" }) });
+      const result = await response.json();
+      if (response.status !== 409 || result.error !== "Ce numéro est déjà associé à un compte.") throw new Error("duplicate response is not usable");
+    } finally { if (duplicateId) await database.auth.admin.deleteUser(duplicateId); if (adminId) await database.auth.admin.deleteUser(adminId); await database.from("organizations").delete().eq("id", organizationId); stop(child); }
+  },
+});
+
+Deno.test({
   name: "create-admin-member removes the Auth account when provisioning fails",
   ignore: !localUrl || !localServiceKey,
   fn: async () => {

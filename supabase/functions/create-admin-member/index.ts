@@ -38,14 +38,21 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     if (identityError) return response({ error: isUnauthorized(identityError) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(identityError) ? 401 : 503);
     if (!identity.user) return response({ error: "Unauthorized" }, 401);
     const { data: created, error: createError } = await database.auth.admin.createUser({ phone: input.phone, password: input.password, phone_confirm: true });
-    if (createError) return response({ error: isConflict(createError.message) ? "Unable to create member" : "Service unavailable" }, isConflict(createError.message) ? 409 : 503);
+    if (createError) return response({ error: isConflict(createError.message) ? "Ce numéro est déjà associé à un compte." : "Service unavailable" }, isConflict(createError.message) ? 409 : 503);
     if (!created.user) return response({ error: "Service unavailable" }, 503);
     const compensate = async () => {
       try {
         const { error } = await database.auth.admin.deleteUser(created.user.id);
         if (!error) return true;
       } catch { /* return the same safe operational error below */ }
-      logOperationalFailure("Auth compensation failed");
+      try {
+        const { error } = await database.auth.admin.updateUserById(created.user.id, { ban_duration: "876000h" });
+        if (!error) {
+          logOperationalFailure("Auth account quarantined after failed compensation");
+          return false;
+        }
+      } catch { /* report only safe context below */ }
+      logOperationalFailure("Auth compensation and quarantine failed");
       return false;
     };
     let memberId: unknown, provisionError: { message?: string; code?: string } | null;

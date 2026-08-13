@@ -27,6 +27,15 @@ Deno.test("get-admin-members rejects invalid filters before calling Supabase", a
   } finally { stop(child); }
 });
 
+Deno.test("get-admin-members rejects an invalid member status before calling Supabase", async () => {
+  const child = start({ SUPABASE_URL: "http://127.0.0.1:54321", SUPABASE_SERVICE_ROLE_KEY: "test" });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  try {
+    const response = await fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: "Bearer token", "content-type": "application/json" }, body: JSON.stringify({ memberStatus: "archived" }) });
+    if (response.status !== 400) throw new Error(`expected 400, got ${response.status}`);
+  } finally { stop(child); }
+});
+
 Deno.test("get-admin-members returns 503 when its Supabase dependency is unavailable", async () => {
   const child = start({ SUPABASE_URL: "http://127.0.0.1:1", SUPABASE_SERVICE_ROLE_KEY: "test" });
   await new Promise((resolve) => setTimeout(resolve, 200));

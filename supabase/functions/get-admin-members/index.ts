@@ -3,15 +3,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type, authorization, apikey" };
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
-type ListRequest = { query: string; paymentStatus: "all" | "paid" | "unpaid" | "partial"; role: "all" | "member" | "admin"; offset: number; limit: number };
+type ListRequest = { query: string; paymentStatus: "all" | "paid" | "unpaid" | "partial"; role: "all" | "member" | "admin"; memberStatus: "all" | "pending_membership" | "active" | "suspended" | "removed"; offset: number; limit: number };
 type RpcRow = { member_id: string | null; first_name: string | null; last_name: string | null; phone: string | null; role: "member" | "admin" | null; fee_status: "paid" | "unpaid" | "partial" | null; remaining_amount: number | string | null; total_members: number | string | null; members_paid: number | string | null; members_late: number | string | null };
 
 const parseRequest = (body: unknown): ListRequest | null => {
   if (!body || typeof body !== "object") return null;
   const data = body as Record<string, unknown>;
-  const query = data.query ?? "", paymentStatus = data.paymentStatus ?? "all", role = data.role ?? "all", offset = data.offset ?? 0, limit = data.limit ?? 50;
-  if (typeof query !== "string" || (paymentStatus !== "all" && paymentStatus !== "paid" && paymentStatus !== "unpaid" && paymentStatus !== "partial") || (role !== "all" && role !== "member" && role !== "admin") || typeof offset !== "number" || !Number.isInteger(offset) || offset < 0 || typeof limit !== "number" || !Number.isInteger(limit) || limit < 1 || limit > 50) return null;
-  return { query, paymentStatus, role, offset, limit };
+  const query = data.query ?? "", paymentStatus = data.paymentStatus ?? "all", role = data.role ?? "all", memberStatus = data.memberStatus ?? "all", offset = data.offset ?? 0, limit = data.limit ?? 50;
+  if (typeof query !== "string" || (paymentStatus !== "all" && paymentStatus !== "paid" && paymentStatus !== "unpaid" && paymentStatus !== "partial") || (role !== "all" && role !== "member" && role !== "admin") || (memberStatus !== "all" && memberStatus !== "pending_membership" && memberStatus !== "active" && memberStatus !== "suspended" && memberStatus !== "removed") || typeof offset !== "number" || !Number.isInteger(offset) || offset < 0 || typeof limit !== "number" || !Number.isInteger(limit) || limit < 1 || limit > 50) return null;
+  return { query, paymentStatus, role, memberStatus, offset, limit };
 };
 
 const count = (value: number | string | null | undefined) => Number(value ?? 0);
@@ -35,7 +35,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     if (identityError) return response({ error: isUnauthorized(identityError) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(identityError) ? 401 : 503);
     if (!identity.user) return response({ error: "Unauthorized" }, 401);
     const { data, error } = await database.rpc("list_admin_members", {
-      admin_id: identity.user.id, query: input.query, payment_status: input.paymentStatus, role_filter: input.role,
+      admin_id: identity.user.id, query: input.query, payment_status: input.paymentStatus, role_filter: input.role, member_status_filter: input.memberStatus,
       offset_value: input.offset, limit_value: input.limit,
     });
     if (error) return response({ error: isUnauthorized(error) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(error) ? 401 : 503);
