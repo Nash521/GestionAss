@@ -326,6 +326,7 @@ test('the member page provides administration, filters, and direct account creat
   assert.match(source, /getAdminMembers/);
   assert.match(source, /createAdminMember/);
   assert.match(source, /memberStatus/);
+  assert.match(source, /Partiellement r\u00e9gl\u00e9e/);
   assert.match(source, /setTimeout\(\(\) => \{[^}]*loadMembers/, 'search is debounced before loading members');
   assert.match(supabase, /export type AdminMember/);
   assert.match(supabase, /export type AdminMembersPage/);
