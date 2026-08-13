@@ -306,16 +306,31 @@ test('the admin dashboard composes shared animated chrome with literal section r
   assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
 });
 
-test('the members admin route renders the shared members chrome', async () => {
+test('the member page provides administration, filters, and direct account creation', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
+  const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
 
   assert.match(source, /import \{ AdminHeader, AdminNavigation \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
+  assert.match(source, /<ImageBackground/);
+  assert.match(source, /Fond_ecranMobile\.png/);
+  assert.match(source, /<ScrollView/);
   assert.match(source, /<AdminHeader \/>/);
   assert.match(source, /<AdminNavigation active="members" \/>/);
-  assert.match(source, /<Text>Membres<\/Text>/);
-  assert.match(source, /StyleSheet\.create/);
-  assert.match(source, /page:\s*\{ flex: 1, backgroundColor: "#FFF" \}/);
-  assert.match(source, /<View style=\{styles\.page\}>/);
+  assert.match(source, /Rechercher un nom, t\u00e9l\u00e9phone/);
+  assert.match(source, /Tous les statuts/);
+  assert.match(source, /Toutes les cotisations/);
+  assert.match(source, /Tous les r\u00f4les/);
+  assert.match(source, /Ajouter un membre/);
+  assert.match(source, /Mot de passe initial/);
+  assert.match(source, /Confirmation du mot de passe/);
+  assert.match(source, /getAdminMembers/);
+  assert.match(source, /createAdminMember/);
+  assert.match(source, /memberStatus/);
+  assert.match(source, /setTimeout\(\(\) => \{[^}]*loadMembers/, 'search is debounced before loading members');
+  assert.match(supabase, /export type AdminMember/);
+  assert.match(supabase, /export type AdminMembersPage/);
+  assert.match(supabase, /"get-admin-members"/);
+  assert.match(supabase, /"create-admin-member"/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {

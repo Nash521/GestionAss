@@ -1,14 +1,62 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
+import { ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
+import { AdminMember, AdminMembersPage, createAdminMember, getAdminMembers } from "../../src/lib/supabase";
+
+const background = require("../../assets/Fond_ecranMobile.png");
+const emptyPage: AdminMembersPage = { totalMembers: 0, membersLate: 0, membersPaid: 0, members: [] };
+type MemberStatusFilter = "all" | AdminMember["memberStatus"];
+type PaymentFilter = "all" | AdminMember["paymentStatus"];
+type RoleFilter = "all" | AdminMember["role"];
+const paymentLabels: Record<PaymentFilter, string> = { all: "Toutes les cotisations", paid: "À jour", unpaid: "En retard", partial: "Partielles" };
+const roleLabels: Record<RoleFilter, string> = { all: "Tous les rôles", member: "Membres", admin: "Administrateurs" };
+const statusLabels: Record<MemberStatusFilter, string> = { all: "Tous les statuts", pending_membership: "En attente", active: "Actifs", suspended: "Suspendus", removed: "Supprimés" };
+const money = (value: number | null) => value === null ? "—" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
 
 export default function AdminMembers() {
+  const [page, setPage] = useState(emptyPage); const [query, setQuery] = useState("");
+  const [memberStatus, setMemberStatus] = useState<MemberStatusFilter>("all"); const [paymentStatus, setPaymentStatus] = useState<PaymentFilter>("all"); const [role, setRole] = useState<RoleFilter>("all");
+  const [loading, setLoading] = useState(true); const [error, setError] = useState(false); const [showForm, setShowForm] = useState(false); const [submitting, setSubmitting] = useState(false); const [formError, setFormError] = useState("");
+  const [firstName, setFirstName] = useState(""); const [lastName, setLastName] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [passwordConfirmation, setPasswordConfirmation] = useState(""); const [formRole, setFormRole] = useState<"member" | "admin">("member");
+  const loadMembers = useCallback(async () => {
+    setLoading(true); setError(false);
+    try { setPage(await getAdminMembers({ query, memberStatus, paymentStatus, role })); }
+    catch { setError(true); }
+    finally { setLoading(false); }
+  }, [query, memberStatus, paymentStatus, role]);
+  useEffect(() => { const timer = setTimeout(() => { void loadMembers(); }, 300); return () => clearTimeout(timer); }, [loadMembers]);
+  const resetForm = () => { setFirstName(""); setLastName(""); setPhone(""); setPassword(""); setPasswordConfirmation(""); setFormRole("member"); setFormError(""); };
+  const submit = async () => {
+    if (password !== passwordConfirmation) { setFormError("Les mots de passe ne correspondent pas."); return; }
+    setSubmitting(true); setFormError("");
+    try {
+      const normalizedPhone = phone.startsWith("+225") ? phone : `+225${phone}`;
+      await createAdminMember({ firstName, lastName, phone: normalizedPhone, password, passwordConfirmation, role: formRole });
+      resetForm(); setShowForm(false); await loadMembers();
+    } catch { setFormError("Impossible d’ajouter ce membre."); }
+    finally { setSubmitting(false); }
+  };
+  const filter = <T extends string>(current: T, change: (value: T) => void, labels: Record<T, string>) => <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{(Object.keys(labels) as T[]).map((value) => <Pressable key={value} style={[styles.filter, current === value && styles.filterActive]} onPress={() => change(value)}><Text style={[styles.filterText, current === value && styles.filterTextActive]}>{labels[value]}</Text></Pressable>)}</ScrollView>;
   return <View style={styles.page}>
-    <AdminHeader />
-    <Text>Membres</Text>
-    <AdminNavigation active="members" />
+    <ScrollView showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
+      <Text style={styles.kicker}>Gestion de l’association</Text><Text style={styles.title}>Membres</Text><Text style={styles.subtitle}>Gérez les adhérents, leurs rôles et leurs droits d’adhésion.</Text>
+      <View style={styles.stats}><Stat icon="users" value={page.totalMembers} label="Total membres" /><Stat icon="clock" value={page.membersLate} label="Total en retard" /><Stat icon="check-circle" value={page.membersPaid} label="Total à jour" /></View>
+      <Pressable style={styles.addButton} onPress={() => setShowForm(true)}><Feather name="user-plus" size={19} color="#FFF" /><Text style={styles.addText}>Ajouter un membre</Text></Pressable>
+      <View style={styles.search}><Feather name="search" size={19} color="#65758A" /><TextInput value={query} onChangeText={setQuery} placeholder="Rechercher un nom, téléphone" placeholderTextColor="#8A98A8" style={styles.searchInput} /></View>
+      {filter(memberStatus, setMemberStatus, statusLabels)}{filter(paymentStatus, setPaymentStatus, paymentLabels)}{filter(role, setRole, roleLabels)}
+      <View style={styles.list}>{loading ? <Text style={styles.message}>Chargement des membres…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les membres.</Text><Pressable onPress={() => void loadMembers()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : page.members.length === 0 ? <Text style={styles.message}>Aucun membre ne correspond à votre recherche.</Text> : page.members.map((member) => <MemberCard key={member.id} member={member} />)}</View>
+    </View></ImageBackground></ScrollView>
+    <AdminHeader /><AdminNavigation active="members" />
+    <Modal visible={showForm} transparent animationType="slide" onRequestClose={() => !submitting && setShowForm(false)}><View style={styles.modalShade}><View style={styles.modal}><Text style={styles.modalTitle}>Ajouter un membre</Text><TextInput value={firstName} onChangeText={setFirstName} placeholder="Prénom" style={styles.input} editable={!submitting} /><TextInput value={lastName} onChangeText={setLastName} placeholder="Nom" style={styles.input} editable={!submitting} /><TextInput value={phone} onChangeText={setPhone} placeholder="Téléphone" keyboardType="phone-pad" style={styles.input} editable={!submitting} /><TextInput value={password} onChangeText={setPassword} placeholder="Mot de passe initial" secureTextEntry style={styles.input} editable={!submitting} /><TextInput value={passwordConfirmation} onChangeText={setPasswordConfirmation} placeholder="Confirmation du mot de passe" secureTextEntry style={styles.input} editable={!submitting} />
+      <View style={styles.roleRow}>{(["member", "admin"] as const).map((value) => <Pressable key={value} disabled={submitting} onPress={() => setFormRole(value)} style={[styles.roleChoice, formRole === value && styles.roleChoiceActive]}><Text style={formRole === value ? styles.roleChoiceTextActive : styles.roleChoiceText}>{value === "member" ? "Membre" : "Administrateur"}</Text></Pressable>)}</View>{formError ? <Text style={styles.formError}>{formError}</Text> : null}<View style={styles.modalActions}><Pressable disabled={submitting} onPress={() => { resetForm(); setShowForm(false); }}><Text style={styles.cancel}>Annuler</Text></Pressable><Pressable disabled={submitting} style={[styles.submit, submitting && styles.disabled]} onPress={() => void submit()}><Text style={styles.submitText}>{submitting ? "Ajout…" : "Ajouter"}</Text></Pressable></View>
+    </View></View></Modal>
   </View>;
 }
 
+function Stat({ icon, value, label }: { icon: keyof typeof Feather.glyphMap; value: number; label: string }) { return <View style={styles.stat}><Feather name={icon} size={18} color="#00A99D" /><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
+function MemberCard({ member }: { member: AdminMember }) { const initials = `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`.toUpperCase(); const paid = member.paymentStatus === "paid"; return <View style={styles.member}><View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View><View style={styles.memberInfo}><Text style={styles.memberName}>{member.firstName} {member.lastName}</Text><Text style={styles.memberPhone}>{member.phone}</Text><View style={styles.badges}><Text style={[styles.badge, paid ? styles.paid : styles.late]}>{paid ? "À jour" : "En retard"}</Text><Text style={styles.roleBadge}>{member.role === "admin" ? "Administrateur" : "Membre"}</Text></View></View><Text style={styles.remaining}>{money(member.amountRemaining)}</Text></View>; }
+
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#FFF" },
+  page: { flex: 1 }, background: { minHeight: "100%" }, backgroundImage: { resizeMode: "cover" }, content: { gap: 13, padding: 20, paddingBottom: 108, paddingTop: 116 }, kicker: { color: "#65758A", fontSize: 13 }, title: { color: "#102B3D", fontSize: 30, fontWeight: "800" }, subtitle: { color: "#65758A", fontSize: 14, lineHeight: 20 }, stats: { flexDirection: "row", gap: 8 }, stat: { alignItems: "center", backgroundColor: "rgba(255,255,255,.96)", borderRadius: 15, flex: 1, minHeight: 102, padding: 11 }, statValue: { color: "#102B3D", fontSize: 20, fontWeight: "800", marginTop: 5 }, statLabel: { color: "#65758A", fontSize: 10, marginTop: 3, textAlign: "center" }, addButton: { alignItems: "center", backgroundColor: "#00A99D", borderRadius: 14, flexDirection: "row", gap: 9, justifyContent: "center", minHeight: 52 }, addText: { color: "#FFF", fontWeight: "800" }, search: { alignItems: "center", backgroundColor: "#FFF", borderRadius: 13, flexDirection: "row", gap: 9, paddingHorizontal: 14 }, searchInput: { color: "#102B3D", flex: 1, minHeight: 48 }, filterRow: { gap: 8, paddingRight: 20 }, filter: { backgroundColor: "rgba(255,255,255,.9)", borderColor: "#DDE6E8", borderRadius: 20, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8 }, filterActive: { backgroundColor: "#E1F7F1", borderColor: "#00A99D" }, filterText: { color: "#65758A", fontSize: 12, fontWeight: "600" }, filterTextActive: { color: "#007D74" }, list: { gap: 10 }, state: { alignItems: "center", gap: 8, padding: 25 }, message: { color: "#65758A", padding: 24, textAlign: "center" }, retry: { color: "#00A99D", fontWeight: "800" }, member: { alignItems: "center", backgroundColor: "rgba(255,255,255,.97)", borderRadius: 16, flexDirection: "row", gap: 11, padding: 13 }, avatar: { alignItems: "center", backgroundColor: "#DDF5F0", borderRadius: 24, height: 47, justifyContent: "center", width: 47 }, avatarText: { color: "#007D74", fontWeight: "800" }, memberInfo: { flex: 1 }, memberName: { color: "#102B3D", fontWeight: "800" }, memberPhone: { color: "#65758A", fontSize: 12, marginTop: 2 }, badges: { flexDirection: "row", gap: 5, marginTop: 7 }, badge: { borderRadius: 8, fontSize: 10, fontWeight: "700", overflow: "hidden", paddingHorizontal: 7, paddingVertical: 3 }, paid: { backgroundColor: "#E1F7F1", color: "#007D74" }, late: { backgroundColor: "#FDE7E4", color: "#C75042" }, roleBadge: { backgroundColor: "#EFF4F4", borderRadius: 8, color: "#65758A", fontSize: 10, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 3 }, remaining: { color: "#102B3D", fontSize: 11, fontWeight: "700" }, modalShade: { backgroundColor: "rgba(16,43,61,.45)", flex: 1, justifyContent: "flex-end" }, modal: { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 10, padding: 21, paddingBottom: 34 }, modalTitle: { color: "#102B3D", fontSize: 22, fontWeight: "800", marginBottom: 4 }, input: { backgroundColor: "#F4F7F7", borderRadius: 11, color: "#102B3D", minHeight: 48, paddingHorizontal: 13 }, roleRow: { flexDirection: "row", gap: 8 }, roleChoice: { alignItems: "center", borderColor: "#DDE6E8", borderRadius: 10, borderWidth: 1, flex: 1, padding: 11 }, roleChoiceActive: { backgroundColor: "#E1F7F1", borderColor: "#00A99D" }, roleChoiceText: { color: "#65758A" }, roleChoiceTextActive: { color: "#007D74", fontWeight: "800" }, formError: { color: "#C75042", fontSize: 12 }, modalActions: { alignItems: "center", flexDirection: "row", justifyContent: "flex-end", gap: 20, marginTop: 8 }, cancel: { color: "#65758A", fontWeight: "700" }, submit: { backgroundColor: "#00A99D", borderRadius: 10, paddingHorizontal: 18, paddingVertical: 12 }, disabled: { opacity: .55 }, submitText: { color: "#FFF", fontWeight: "800" },
 });
