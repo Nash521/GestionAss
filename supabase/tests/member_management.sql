@@ -1,6 +1,6 @@
 begin;
 
-select plan(31);
+select plan(34);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -47,13 +47,15 @@ select is((select total_members from public.list_admin_members('41000000-0000-00
 select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing counts partial membership fees as late');
 select is((select members_paid from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 2::bigint, 'listing counts members without fees as current');
 select is((select member_status from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 'active'::public.member_status, 'listing returns each member status');
+select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50) limit 1), 3::bigint, 'filtered rows retain organization-wide total');
+select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'filtered rows retain organization-wide late count');
 update public.members set status = 'suspended' where id = '43000000-0000-0000-0000-000000000002';
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'suspended', 0, 50)), 1::bigint, 'listing filters members by member status');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing searches names case-insensitively');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'partial', 'admin', 'all', 0, 50)), 1::bigint, 'listing combines payment and role filters');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '%_', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing treats percent and underscore search characters literally');
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', E'\\', 'all', 'all', 'all', 0, 50)), 1::bigint, 'listing treats a backslash search character literally');
-select is((select fee_status is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'percent', 'all', 'all', 'all', 0, 50)), true, 'listing exposes a member with no membership fee');
+select is((select fee_status from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'percent', 'all', 'all', 'all', 0, 50)), 'paid'::public.membership_fee_status, 'listing normalizes a member with no membership fee as current');
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 99, 50)), 3::bigint, 'an empty page preserves summary metadata');
 select ok((select member_id is null from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 99, 50)), 'an empty page returns a metadata-only row');
 select throws_ok($$ select * from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'late', 'all', 'all', 0, 50) $$, 'Invalid payment status', 'invalid payment status is rejected');

@@ -178,7 +178,7 @@ begin
   escaped_query := replace(replace(replace(normalized_query, E'\\', E'\\\\'), '%', E'\\%'), '_', E'\\_');
 
   return query
-  with filtered as (
+  with scoped as (
     select
       m.id as member_id,
       m.user_id,
@@ -188,28 +188,32 @@ begin
       m.phone,
       u.role,
       m.status as member_status,
-      f.status as fee_status,
+      coalesce(f.status, 'paid'::public.membership_fee_status) as fee_status,
       f.remaining_amount
     from public.members m
     join public.users u on u.id = m.user_id and u.organization_id = m.organization_id
     left join public.membership_fees f on f.member_id = m.id
     where m.organization_id = admin_organization_id
-      and (
+  ),
+  filtered as (
+    select *
+    from scoped m
+    where (
         normalized_query = ''
         or lower(m.first_name) like '%' || escaped_query || '%' escape E'\\'
         or lower(m.last_name) like '%' || escaped_query || '%' escape E'\\'
         or lower(m.phone) like '%' || escaped_query || '%' escape E'\\'
       )
-      and (normalized_payment_status = 'all' or f.status::text = normalized_payment_status)
-      and (normalized_role_filter = 'all' or u.role::text = normalized_role_filter)
-      and (normalized_member_status_filter = 'all' or m.status::text = normalized_member_status_filter)
+      and (normalized_payment_status = 'all' or m.fee_status::text = normalized_payment_status)
+      and (normalized_role_filter = 'all' or m.role::text = normalized_role_filter)
+      and (normalized_member_status_filter = 'all' or m.member_status::text = normalized_member_status_filter)
   ),
   summary as (
     select
       count(*) as total_members,
-      count(*) filter (where fee_status is null or fee_status = 'paid') as members_paid,
+      count(*) filter (where fee_status = 'paid') as members_paid,
       count(*) filter (where fee_status in ('unpaid', 'partial')) as members_late
-    from filtered
+    from scoped
   ),
   paged as (
     select *

@@ -4,7 +4,7 @@ const headers = { "Content-Type": "application/json", "Access-Control-Allow-Orig
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
 type ListRequest = { query: string; paymentStatus: "all" | "paid" | "unpaid" | "partial"; role: "all" | "member" | "admin"; memberStatus: "all" | "pending_membership" | "active" | "suspended" | "removed"; offset: number; limit: number };
-type RpcRow = { member_id: string | null; first_name: string | null; last_name: string | null; phone: string | null; role: "member" | "admin" | null; member_status: "pending_membership" | "active" | "suspended" | "removed" | null; fee_status: "paid" | "unpaid" | "partial" | null; remaining_amount: number | string | null; total_members: number | string | null; members_paid: number | string | null; members_late: number | string | null };
+type RpcRow = { member_id: string | null; first_name: string | null; last_name: string | null; phone: string | null; role: "member" | "admin" | null; member_status: "pending_membership" | "active" | "suspended" | "removed" | null; fee_status: "paid" | "unpaid" | "partial"; remaining_amount: number | string | null; total_members: number | string | null; members_paid: number | string | null; members_late: number | string | null };
 
 const parseRequest = (body: unknown): ListRequest | null => {
   if (!body || typeof body !== "object") return null;
