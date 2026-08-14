@@ -1,6 +1,6 @@
 begin;
 
-select plan(55);
+select plan(57);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -160,8 +160,19 @@ select ok(not has_function_privilege('authenticated', 'public.get_admin_member_d
 select ok(has_function_privilege('service_role', 'public.get_admin_member_detail(uuid, uuid)', 'execute'), 'service role can retrieve member details');
 select throws_ok(
   $$ insert into public.monthly_contribution_dues (member_id, contribution_month, due_date, amount_due, amount_paid, remaining_amount, status) values ('43000000-0000-0000-0000-000000000001', '2026-03-01', '2026-03-31', 100, 20, 80, 'paid') $$,
-  'new row for relation "monthly_contribution_dues" violates check constraint "monthly_contribution_dues_check2"',
+  '23514',
+  null,
   'monthly dues reject a status and balance mismatch'
+);
+select throws_ok(
+  $$ insert into public.exceptional_contributions (organization_id, label, amount, due_date, created_by) values ('42000000-0000-0000-0000-000000000001', 'Createur croise', 100, '2026-03-31', '41000000-0000-0000-0000-000000000002') $$,
+  'Exceptional contribution creator must belong to the organization',
+  'exceptional contributions reject a creator from another organization'
+);
+select throws_ok(
+  $$ insert into public.disbursements (organization_id, label, amount, disbursed_on, created_by) values ('42000000-0000-0000-0000-000000000001', 'Createur croise', 100, '2026-03-31', '41000000-0000-0000-0000-000000000002') $$,
+  'Disbursement creator must belong to the organization',
+  'disbursements reject a creator from another organization'
 );
 
 select * from finish();
