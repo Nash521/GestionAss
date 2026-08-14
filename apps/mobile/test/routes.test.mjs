@@ -418,7 +418,12 @@ test('the member detail route renders contributions, aid, and an accessible nati
   assert.match(source, /Cotisations exceptionnelles/);
   assert.match(source, /Aides reçues/);
   assert.match(source, /Total cotisé/);
+  assert.match(source, /Mensualités à payer/);
+  assert.match(source, /Exceptionnelles à payer/);
+  assert.match(source, /Administrateur/);
+  assert.match(source, /Supprimé/);
   assert.match(source, /Graphique payé et non payé : \$\{paid\} payés, \$\{unpaid\} impayés/);
+  assert.match(source, /accessible=\{true\}/);
   assert.match(source, /Aucune cotisation enregistrée\./);
   assert.match(source, /Aucune aide reçue\./);
   assert.match(source, /Membre introuvable\./);
