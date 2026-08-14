@@ -124,7 +124,7 @@ insert into public.disbursements (organization_id, member_id, label, amount, dis
   ('42000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001', 'Aide medicale', 250, '2026-02-20', '41000000-0000-0000-0000-000000000001'),
   ('42000000-0000-0000-0000-000000000001', null, 'Aide generale', 125, '2026-02-21', '41000000-0000-0000-0000-000000000001');
 
-select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'totalContributed')::numeric, 2000::numeric, 'member detail totals membership, monthly, and exceptional payments');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'totalContributed')::numeric, 1000::numeric, 'member detail excludes membership fees from contribution totals');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'monthlyPaid')::numeric, 700::numeric, 'member detail reports monthly paid total');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'exceptionalRemaining')::numeric, 700::numeric, 'member detail reports exceptional balance');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'count')::integer, 1, 'member detail excludes general disbursements from member aid count');
