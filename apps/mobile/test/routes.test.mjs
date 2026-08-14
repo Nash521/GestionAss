@@ -387,3 +387,18 @@ test('the login screen prefixes local Ivorian phone numbers before signing in', 
   assert.match(source, /const normalizedPhone = phone\.startsWith\("\+225"\) \? phone : `\+225\$\{phone\}`/);
   assert.match(source, /signInWithPhone\(normalizedPhone, password\)/);
 });
+
+test('the member list exposes a typed detail client and opens the selected member', async () => {
+  const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
+  const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+
+  assert.match(supabase, /export type ContributionDue/);
+  assert.match(supabase, /export type AidDisbursement/);
+  assert.match(supabase, /export type MemberChartPoint/);
+  assert.match(supabase, /export type AdminMemberDetail/);
+  assert.match(supabase, /export function getAdminMemberDetail\(memberId: string\)/);
+  assert.match(supabase, /invokeRegistrationFunction<AdminMemberDetail>\("get-admin-member-detail", \{ memberId \}\)/);
+  assert.match(source, /<Pressable[^>]*accessibilityRole="button"/);
+  assert.match(source, /accessibilityLabel=\{`Voir \$\{member\.firstName\} \$\{member\.lastName\}`\}/);
+  assert.match(source, /router\.push\(\{ pathname: "\/\(admin\)\/members\/\[memberId\]", params: \{ memberId: member\.id \} \}\)/);
+});

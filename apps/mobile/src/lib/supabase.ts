@@ -54,6 +54,33 @@ export type AdminMember = {
   amountRemaining: number | null;
 };
 
+export type ContributionDue = {
+  id: string;
+  label?: string;
+  month?: string;
+  dueDate: string;
+  amountDue: number;
+  amountPaid: number;
+  amountRemaining: number;
+  status: "paid" | "partial" | "unpaid";
+};
+
+export type AidDisbursement = { id: string; label: string; amount: number; disbursedOn: string };
+export type MemberChartPoint = { month: string; paid: number; unpaid: number };
+export type AdminMemberDetail = {
+  member: AdminMember & { memberNumber: string; joiningDate: string };
+  membershipFee: { amountDue: number; amountPaid: number; amountRemaining: number; status: "paid" | "partial" | "unpaid" };
+  monthlyDues: ContributionDue[];
+  exceptionalDues: Required<Pick<ContributionDue, "id" | "label" | "dueDate" | "amountDue" | "amountPaid" | "amountRemaining" | "status">>[];
+  aid: { count: number; totalReceived: number; items: AidDisbursement[] };
+  summary: { totalContributed: number; monthlyPaid: number; monthlyRemaining: number; exceptionalPaid: number; exceptionalRemaining: number };
+  chart: MemberChartPoint[];
+};
+
+export function getAdminMemberDetail(memberId: string) {
+  return invokeRegistrationFunction<AdminMemberDetail>("get-admin-member-detail", { memberId });
+}
+
 export type AdminMembersPage = {
   totalMembers: number;
   membersLate: number;
