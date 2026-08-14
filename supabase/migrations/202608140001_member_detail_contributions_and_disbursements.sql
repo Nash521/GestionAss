@@ -172,6 +172,8 @@ declare
   aid jsonb;
   summary jsonb;
   chart jsonb;
+  exceptional_paid numeric;
+  exceptional_remaining numeric;
 begin
   select organization_id into admin_organization_id
   from public.users
@@ -188,6 +190,10 @@ begin
 
   select jsonb_build_object('id', id, 'memberId', member_id, 'amountDue', amount_due, 'amountPaid', amount_paid, 'amountRemaining', remaining_amount, 'status', status)
   into membership_fee from public.membership_fees where member_id = target_member_id;
+  membership_fee := coalesce(membership_fee, jsonb_build_object(
+    'id', null, 'memberId', target_member_id, 'amountDue', 0, 'amountPaid', 0,
+    'amountRemaining', 0, 'status', 'paid'
+  ));
 
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', id, 'memberId', member_id, 'month', contribution_month, 'dueDate', due_date, 'amountDue', amount_due,
@@ -210,14 +216,21 @@ begin
     'items', coalesce(jsonb_agg(jsonb_build_object('id', id, 'memberId', member_id, 'label', label, 'amount', amount, 'disbursedOn', disbursed_on) order by disbursed_on desc, created_at desc), '[]'::jsonb)
   ) into aid from public.disbursements where member_id = target_member_id;
 
+  select coalesce(sum(d.amount_paid), 0), coalesce(sum(d.remaining_amount), 0)
+  into exceptional_paid, exceptional_remaining
+  from public.exceptional_contribution_dues d
+  join public.exceptional_contributions c on c.id = d.exceptional_contribution_id
+  where d.member_id = target_member_id
+    and c.organization_id = admin_organization_id;
+
   select jsonb_build_object(
     'totalContributed', coalesce((select amount_paid from public.membership_fees where member_id = target_member_id), 0) +
       coalesce((select sum(amount_paid) from public.monthly_contribution_dues where member_id = target_member_id), 0) +
-      coalesce((select sum(amount_paid) from public.exceptional_contribution_dues where member_id = target_member_id), 0),
+      exceptional_paid,
     'monthlyPaid', coalesce((select sum(amount_paid) from public.monthly_contribution_dues where member_id = target_member_id), 0),
     'monthlyRemaining', coalesce((select sum(remaining_amount) from public.monthly_contribution_dues where member_id = target_member_id), 0),
-    'exceptionalPaid', coalesce((select sum(amount_paid) from public.exceptional_contribution_dues where member_id = target_member_id), 0),
-    'exceptionalRemaining', coalesce((select sum(remaining_amount) from public.exceptional_contribution_dues where member_id = target_member_id), 0)
+    'exceptionalPaid', exceptional_paid,
+    'exceptionalRemaining', exceptional_remaining
   ) into summary;
 
   select jsonb_agg(jsonb_build_object('month', month_start, 'paid', paid, 'unpaid', unpaid) order by month_start)
@@ -234,6 +247,8 @@ begin
   return jsonb_build_object(
     'member', jsonb_build_object('id', member_record.id, 'memberNumber', member_record.member_number,
       'joiningDate', member_record.joining_date, 'role', member_record.role, 'status', member_record.status,
+      'memberStatus', member_record.status, 'paymentStatus', membership_fee->>'status',
+      'amountRemaining', (membership_fee->>'amountRemaining')::numeric,
       'firstName', member_record.first_name, 'lastName', member_record.last_name, 'phone', member_record.phone),
     'membershipFee', membership_fee,
     'monthlyDues', monthly_dues,

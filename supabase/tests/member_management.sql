@@ -1,6 +1,6 @@
 begin;
 
-select plan(34 + 20);
+select plan(34 + 22);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -127,6 +127,14 @@ select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001'
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'count')::integer, 1, 'member detail excludes general disbursements from member aid count');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'totalReceived')::numeric, 250::numeric, 'member detail reports received aid total');
 select is(jsonb_array_length(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'chart'), 6, 'member detail chart contains exactly six months');
+select ok(
+  public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000004')->'membershipFee' @> '{"amountDue": 0, "amountPaid": 0, "amountRemaining": 0, "status": "paid"}'::jsonb,
+  'member detail returns a zero-safe membership fee when no row exists'
+);
+select ok(
+  public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'member' @> '{"memberStatus": "active", "paymentStatus": "paid", "amountRemaining": 0}'::jsonb,
+  'member detail emits planned mobile member payment fields'
+);
 select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'monthlyDues'->0 ?& array['id', 'month', 'amountRemaining'], 'monthly dues use the client JSON keys');
 select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'exceptionalDues'->0 ?& array['id', 'label', 'amountRemaining'], 'exceptional dues serialize their identifiers and balances');
 select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->'items'->0 ?& array['id', 'label', 'amount', 'disbursedOn'], 'aid items serialize client JSON keys');
