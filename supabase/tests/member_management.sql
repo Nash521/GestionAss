@@ -1,6 +1,6 @@
 begin;
 
-select plan(34);
+select plan(34 + 12);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -101,6 +101,37 @@ select ok(not has_function_privilege('anon', 'public.provision_admin_member(uuid
 select ok(has_function_privilege('service_role', 'public.provision_admin_member(uuid, uuid, text, text, text, public.account_role)', 'execute'), 'service role can provision members');
 select ok(not has_function_privilege('authenticated', 'public.list_admin_members(uuid, text, text, text, text, integer, integer)', 'execute'), 'authenticated cannot list members through the service RPC');
 select ok(has_function_privilege('service_role', 'public.list_admin_members(uuid, text, text, text, text, integer, integer)', 'execute'), 'service role can list members through the service RPC');
+
+select has_table('public', 'monthly_contribution_dues', 'monthly contribution dues ledger exists');
+select has_table('public', 'exceptional_contributions', 'exceptional contributions ledger exists');
+select has_table('public', 'exceptional_contribution_dues', 'exceptional contribution dues ledger exists');
+select has_table('public', 'disbursements', 'disbursement ledger exists');
+select has_function('public', 'get_admin_member_detail', array['uuid', 'uuid'], 'admin member detail RPC exists');
+
+insert into public.monthly_contribution_dues (member_id, contribution_month, due_date, amount_due, amount_paid, remaining_amount, status) values
+  ('43000000-0000-0000-0000-000000000001', '2026-01-01', '2026-01-31', 500, 500, 0, 'paid'),
+  ('43000000-0000-0000-0000-000000000001', '2026-02-01', '2026-02-28', 500, 200, 300, 'partial');
+
+insert into public.exceptional_contributions (id, organization_id, label, amount, due_date, created_by) values
+  ('44000000-0000-0000-0000-000000000001', '42000000-0000-0000-0000-000000000001', 'Solidarite rentree', 1000, '2026-02-15', '41000000-0000-0000-0000-000000000001');
+insert into public.exceptional_contribution_dues (exceptional_contribution_id, member_id, amount_due, amount_paid, remaining_amount, status) values
+  ('44000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001', 1000, 300, 700, 'partial');
+
+insert into public.disbursements (organization_id, member_id, label, amount, disbursed_on, created_by) values
+  ('42000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001', 'Aide medicale', 250, '2026-02-20', '41000000-0000-0000-0000-000000000001'),
+  ('42000000-0000-0000-0000-000000000001', null, 'Aide generale', 125, '2026-02-21', '41000000-0000-0000-0000-000000000001');
+
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'totalContributed')::numeric, 2000::numeric, 'member detail totals membership, monthly, and exceptional payments');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'monthlyPaid')::numeric, 700::numeric, 'member detail reports monthly paid total');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'summary'->>'exceptionalRemaining')::numeric, 700::numeric, 'member detail reports exceptional balance');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'count')::integer, 1, 'member detail excludes general disbursements from member aid count');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'totalReceived')::numeric, 250::numeric, 'member detail reports received aid total');
+select is(jsonb_array_length(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'chart'), 6, 'member detail chart contains exactly six months');
+select throws_ok(
+  $$ insert into public.disbursements (organization_id, member_id, label, amount, disbursed_on, created_by) values ('42000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000003', 'Aide croisee', 50, '2026-02-22', '41000000-0000-0000-0000-000000000001') $$,
+  'Disbursement member must belong to the organization',
+  'disbursement rejects a member from another organization'
+);
 
 select * from finish();
 rollback;
