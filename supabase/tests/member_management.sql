@@ -1,6 +1,6 @@
 begin;
 
-select plan(34 + 22);
+select plan(55);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -78,8 +78,11 @@ select throws_ok(
   'a null requested role is rejected explicitly'
 );
 
+create temporary table provisioned_member as
+select public.provision_admin_member('41000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000006', '  Naya  ', '  Yao  ', '+2250700000006', 'member') as id;
+
 select is(
-  public.provision_admin_member('41000000-0000-0000-0000-000000000001', '41000000-0000-0000-0000-000000000006', '  Naya  ', '  Yao  ', '+2250700000006', 'member'),
+  (select id from provisioned_member),
   (select id from public.members where user_id = '41000000-0000-0000-0000-000000000006'),
   'an active admin provisions a member'
 );
