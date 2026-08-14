@@ -402,3 +402,25 @@ test('the member list exposes a typed detail client and opens the selected membe
   assert.match(source, /accessibilityLabel=\{`Voir \$\{member\.firstName\} \$\{member\.lastName\}`\}/);
   assert.match(source, /router\.push\(\{ pathname: "\/\(admin\)\/members\/\[memberId\]", params: \{ memberId: member\.id \} \}\)/);
 });
+
+test('the member detail route renders contributions, aid, and an accessible native chart', async () => {
+  const source = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /useLocalSearchParams/);
+  assert.match(source, /getAdminMemberDetail/);
+  assert.match(source, /router\.back\(\)/);
+  assert.match(source, /ImageBackground/);
+  assert.match(source, /ScrollView/);
+  assert.match(source, /<AdminHeader \/>/);
+  assert.doesNotMatch(source, /AdminNavigation/);
+  assert.match(source, /Droit d’adhésion/);
+  assert.match(source, /Calendrier des cotisations/);
+  assert.match(source, /Cotisations exceptionnelles/);
+  assert.match(source, /Aides reçues/);
+  assert.match(source, /Total cotisé/);
+  assert.match(source, /Graphique payé et non payé : \$\{paid\} payés, \$\{unpaid\} impayés/);
+  assert.match(source, /Aucune cotisation enregistrée\./);
+  assert.match(source, /Aucune aide reçue\./);
+  assert.match(source, /Membre introuvable\./);
+  assert.match(source, /paddingBottom: 108/);
+});
