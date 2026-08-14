@@ -91,6 +91,25 @@ begin
 end;
 $$;
 
+create function public.enforce_exceptional_contribution_due_organization()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1
+    from public.exceptional_contributions c
+    join public.members m on m.id = new.member_id
+    where c.id = new.exceptional_contribution_id
+      and c.organization_id = m.organization_id
+  ) then
+    raise exception 'Exceptional contribution member must belong to the organization';
+  end if;
+  return new;
+end;
+$$;
+
 create trigger monthly_contribution_dues_set_updated_at
 before update on public.monthly_contribution_dues
 for each row execute function public.set_member_detail_updated_at();
@@ -106,6 +125,9 @@ for each row execute function public.set_member_detail_updated_at();
 create trigger disbursements_enforce_member_organization
 before insert or update of organization_id, member_id on public.disbursements
 for each row execute function public.enforce_disbursement_member_organization();
+create trigger exceptional_contribution_dues_enforce_member_organization
+before insert or update of exceptional_contribution_id, member_id on public.exceptional_contribution_dues
+for each row execute function public.enforce_exceptional_contribution_due_organization();
 
 alter table public.monthly_contribution_dues enable row level security;
 alter table public.exceptional_contributions enable row level security;
@@ -164,27 +186,28 @@ begin
     raise exception 'Member not found';
   end if;
 
-  select jsonb_build_object('amountDue', amount_due, 'amountPaid', amount_paid, 'remainingAmount', remaining_amount, 'status', status)
+  select jsonb_build_object('id', id, 'memberId', member_id, 'amountDue', amount_due, 'amountPaid', amount_paid, 'amountRemaining', remaining_amount, 'status', status)
   into membership_fee from public.membership_fees where member_id = target_member_id;
 
   select coalesce(jsonb_agg(jsonb_build_object(
-    'contributionMonth', contribution_month, 'dueDate', due_date, 'amountDue', amount_due,
-    'amountPaid', amount_paid, 'remainingAmount', remaining_amount, 'status', status
+    'id', id, 'memberId', member_id, 'month', contribution_month, 'dueDate', due_date, 'amountDue', amount_due,
+    'amountPaid', amount_paid, 'amountRemaining', remaining_amount, 'status', status
   ) order by contribution_month desc), '[]'::jsonb)
   into monthly_dues from public.monthly_contribution_dues where member_id = target_member_id;
 
   select coalesce(jsonb_agg(jsonb_build_object(
-    'label', c.label, 'dueDate', c.due_date, 'amountDue', d.amount_due, 'amountPaid', d.amount_paid,
-    'remainingAmount', d.remaining_amount, 'status', d.status
+    'id', d.id, 'exceptionalContributionId', c.id, 'memberId', d.member_id, 'label', c.label, 'dueDate', c.due_date,
+    'amountDue', d.amount_due, 'amountPaid', d.amount_paid, 'amountRemaining', d.remaining_amount, 'status', d.status
   ) order by c.due_date desc, c.created_at desc), '[]'::jsonb)
   into exceptional_dues
   from public.exceptional_contribution_dues d
   join public.exceptional_contributions c on c.id = d.exceptional_contribution_id
-  where d.member_id = target_member_id;
+  where d.member_id = target_member_id
+    and c.organization_id = admin_organization_id;
 
   select jsonb_build_object(
     'count', count(*), 'totalReceived', coalesce(sum(amount), 0),
-    'items', coalesce(jsonb_agg(jsonb_build_object('label', label, 'amount', amount, 'disbursedOn', disbursed_on) order by disbursed_on desc, created_at desc), '[]'::jsonb)
+    'items', coalesce(jsonb_agg(jsonb_build_object('id', id, 'memberId', member_id, 'label', label, 'amount', amount, 'disbursedOn', disbursed_on) order by disbursed_on desc, created_at desc), '[]'::jsonb)
   ) into aid from public.disbursements where member_id = target_member_id;
 
   select jsonb_build_object(
@@ -224,5 +247,6 @@ $$;
 
 revoke all on function public.set_member_detail_updated_at() from public;
 revoke all on function public.enforce_disbursement_member_organization() from public;
+revoke all on function public.enforce_exceptional_contribution_due_organization() from public;
 revoke all on function public.get_admin_member_detail(uuid, uuid) from public;
 grant execute on function public.get_admin_member_detail(uuid, uuid) to service_role;

@@ -1,6 +1,6 @@
 begin;
 
-select plan(34 + 12);
+select plan(34 + 20);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -127,10 +127,30 @@ select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001'
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'count')::integer, 1, 'member detail excludes general disbursements from member aid count');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'totalReceived')::numeric, 250::numeric, 'member detail reports received aid total');
 select is(jsonb_array_length(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'chart'), 6, 'member detail chart contains exactly six months');
+select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'monthlyDues'->0 ?& array['id', 'month', 'amountRemaining'], 'monthly dues use the client JSON keys');
+select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'exceptionalDues'->0 ?& array['id', 'label', 'amountRemaining'], 'exceptional dues serialize their identifiers and balances');
+select ok(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->'items'->0 ?& array['id', 'label', 'amount', 'disbursedOn'], 'aid items serialize client JSON keys');
 select throws_ok(
   $$ insert into public.disbursements (organization_id, member_id, label, amount, disbursed_on, created_by) values ('42000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000003', 'Aide croisee', 50, '2026-02-22', '41000000-0000-0000-0000-000000000001') $$,
   'Disbursement member must belong to the organization',
   'disbursement rejects a member from another organization'
+);
+select throws_ok(
+  $$ insert into public.exceptional_contribution_dues (exceptional_contribution_id, member_id, amount_due, amount_paid, remaining_amount, status) values ('44000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000003', 1000, 0, 1000, 'unpaid') $$,
+  'Exceptional contribution member must belong to the organization',
+  'exceptional contribution due rejects a member from another organization'
+);
+select throws_ok(
+  $$ select public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000003') $$,
+  'Member not found',
+  'member detail hides members from another organization'
+);
+select ok(not has_function_privilege('authenticated', 'public.get_admin_member_detail(uuid, uuid)', 'execute'), 'authenticated cannot retrieve member details through the service RPC');
+select ok(has_function_privilege('service_role', 'public.get_admin_member_detail(uuid, uuid)', 'execute'), 'service role can retrieve member details');
+select throws_ok(
+  $$ insert into public.monthly_contribution_dues (member_id, contribution_month, due_date, amount_due, amount_paid, remaining_amount, status) values ('43000000-0000-0000-0000-000000000001', '2026-03-01', '2026-03-31', 100, 20, 80, 'paid') $$,
+  'new row for relation "monthly_contribution_dues" violates check constraint "monthly_contribution_dues_check2"',
+  'monthly dues reject a status and balance mismatch'
 );
 
 select * from finish();
