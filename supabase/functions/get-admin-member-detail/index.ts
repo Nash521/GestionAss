@@ -38,17 +38,16 @@ export const createHandler = (databaseFactory?: DatabaseFactory) => async (reque
   const input = parseRequest(body);
   if (!input) return response({ error: "Invalid request" }, 400);
 
-  let database: Database;
-  if (databaseFactory) {
-    database = databaseFactory();
-  } else {
-    const url = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
-    database = createClient(url, serviceKey, { auth: { persistSession: false } }) as unknown as Database;
-  }
-
   try {
+    let database: Database;
+    if (databaseFactory) {
+      database = databaseFactory();
+    } else {
+      const url = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
+      database = createClient(url, serviceKey, { auth: { persistSession: false } }) as unknown as Database;
+    }
     const { data: identity, error: identityError } = await database.auth.getUser(bearer);
     if (identityError) return response({ error: isUnauthorized(identityError) ? "Unauthorized" : "Service unavailable" }, isUnauthorized(identityError) ? 401 : 503);
     if (!identity.user) return response({ error: "Unauthorized" }, 401);

@@ -30,6 +30,12 @@ Deno.test("get-admin-member-detail rejects malformed requests before calling Sup
   if (response.status !== 400) throw new Error(`expected 400, got ${response.status}`);
 });
 
+Deno.test("get-admin-member-detail handles client initialization failures safely", async () => {
+  const response = await createHandler(() => { throw new Error("credential details must not leak"); })(request({ memberId }));
+  const body = await response.json();
+  if (response.status !== 503 || body.error !== "Service unavailable") throw new Error("expected the safe service-unavailable response");
+});
+
 Deno.test("get-admin-member-detail rejects an invalid or expired session", async () => {
   const response = await handler({
     auth: { getUser: async () => ({ data: { user: null }, error: { status: 401, message: "Unauthorized" } }) },
