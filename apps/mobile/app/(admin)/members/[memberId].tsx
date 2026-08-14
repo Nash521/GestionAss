@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -16,17 +16,31 @@ export default function MemberDetail() {
   const [detail, setDetail] = useState<AdminMemberDetail | null>(null);
   const [loading, setLoading] = useState(typeof memberId === "string");
   const [error, setError] = useState(false);
+  const requestSequence = useRef(0);
   const validMemberId = typeof memberId === "string" && memberId.length > 0;
 
   const loadDetail = useCallback(async () => {
     if (!validMemberId) return;
+    const requestId = ++requestSequence.current;
     setLoading(true); setError(false);
-    try { setDetail(await getAdminMemberDetail(memberId)); }
-    catch { setError(true); }
-    finally { setLoading(false); }
+    try {
+      const result = await getAdminMemberDetail(memberId);
+      if (requestId !== requestSequence.current) return;
+      setDetail(result);
+    } catch {
+      if (requestId !== requestSequence.current) return;
+      setError(true);
+    } finally {
+      if (requestId !== requestSequence.current) return;
+      setLoading(false);
+    }
   }, [memberId, validMemberId]);
 
-  useEffect(() => { void loadDetail(); }, [loadDetail]);
+  useEffect(() => {
+    if (!validMemberId) { setDetail(null); setError(false); setLoading(false); return; }
+    void loadDetail();
+    return () => { requestSequence.current++; };
+  }, [loadDetail, validMemberId]);
 
   const body = !validMemberId ? <State message="Membre introuvable." /> : loading ? <State message="Chargement du membre…" /> : error || !detail ? <State message="Impossible de charger ce membre." retry={loadDetail} /> : <MemberContent detail={detail} />;
   return <View style={styles.page}>

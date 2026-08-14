@@ -424,6 +424,9 @@ test('the member detail route renders contributions, aid, and an accessible nati
   assert.match(source, /Supprimé/);
   assert.match(source, /Graphique payé et non payé : \$\{paid\} payés, \$\{unpaid\} impayés/);
   assert.match(source, /accessible=\{true\}/);
+  assert.match(source, /useRef\(0\)/, 'detail requests use a sequence guard');
+  assert.match(source, /requestId !== requestSequence\.current/, 'stale detail responses are ignored');
+  assert.match(source, /return \(\) => \{ requestSequence\.current\+\+; \}/, 'unmount invalidates in-flight detail requests');
   assert.match(source, /Aucune cotisation enregistrée\./);
   assert.match(source, /Aucune aide reçue\./);
   assert.match(source, /Membre introuvable\./);
