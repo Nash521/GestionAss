@@ -1,6 +1,6 @@
 begin;
 
-select plan(69);
+select plan(77);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -120,6 +120,19 @@ select is((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'mon
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty monthly finance page preserves JSON metadata');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty exceptional finance page preserves JSON metadata');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty disbursement finance page preserves JSON metadata');
+
+create temporary table blank_reference_due as
+select id from public.monthly_contribution_dues
+where member_id = '53000000-0000-0000-0000-000000000002' and contribution_month = '2026-03-01';
+select throws_ok($$ select public.record_contribution_payment('51000000-0000-0000-0000-000000000001', 'monthly', (select id from blank_reference_due), 100, '2026-03-12', null, null) $$, 'Invalid payment source', 'a null payment source is rejected with a controlled error');
+select public.record_contribution_payment('51000000-0000-0000-0000-000000000001', 'monthly', (select id from blank_reference_due), 100, '2026-03-12', '   ', 'manual');
+select ok((select payment_reference is null from public.contribution_payments where monthly_contribution_due_id = (select id from blank_reference_due)), 'a blank payment reference is normalized to null');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'summary' ?& array['totalPaid', 'totalRemaining', 'totalExpected'], 'monthly finance returns all summary aggregates');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'summary' ?& array['targetCount', 'totalCollected', 'totalRemaining', 'archivedCount'], 'exceptional finance returns all summary aggregates');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'summary' ? 'totalDisbursed', 'disbursement finance returns its total aggregate');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Paiement avec membre', 100, '2026-03-24', 'exceptional_contribution_payment', '53000000-0000-0000-0000-000000000001', (select id from all_active_exceptional), 'preuve') $$, 'Exceptional contribution payment cannot have a member', 'an exceptional contribution payment rejects member context');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Type nul', 100, '2026-03-24', null, null, null, 'preuve') $$, 'Invalid disbursement type', 'a null disbursement type is rejected with a controlled error');
+select is(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 1), public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 1), 'paginated finance responses are stable for tied ordering values');
 
 select * from finish();
 rollback;
