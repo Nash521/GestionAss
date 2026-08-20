@@ -11,7 +11,7 @@ function sectionFor(pathname: string): AdminSection {
 export default function AdminLayout() {
   const pathname = usePathname();
 
-  if (pathname.endsWith("/members/new")) return <Slot />;
+  if (pathname.endsWith("/members/new") || pathname.includes("/finances/new") || pathname.includes("/settings/finance")) return <Slot />;
 
   const activeSection = sectionFor(pathname);
   return <View style={{ flex: 1 }}><Slot /><AdminNavigation active={activeSection} /></View>;

@@ -13,7 +13,7 @@ export function AdminHeader({ translateY }: { translateY?: Animated.Value }) {
   return <Container style={[styles.header, translateY && { transform: [{ translateY }] }]}>
     <Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Événements"><Ionicons name="megaphone-outline" size={24} color="#102B3D" /></Pressable>
     <Image source={logo} style={styles.logo}/>
-    <Pressable style={styles.headerAction} onPress={soon} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable>
+    <Pressable style={styles.headerAction} onPress={() => router.push("/(admin)/settings/finance")} accessibilityLabel="Paramètres"><Feather name="settings" size={22} color="#102B3D" /></Pressable>
   </Container>;
 }
 

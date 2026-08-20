@@ -2,6 +2,19 @@ alter table public.organizations
   add column monthly_contribution_amount numeric(12, 2) not null default 0 check (monthly_contribution_amount >= 0),
   add column monthly_contribution_due_day smallint not null default 1 check (monthly_contribution_due_day between 1 and 28);
 
+create or replace function public.update_monthly_contribution_settings(admin_id uuid, monthly_amount numeric, due_day smallint)
+returns numeric language plpgsql security definer set search_path = public as $$
+declare organization_value uuid;
+begin
+  select organization_id into organization_value from public.users where id = admin_id and role = 'admin' and is_active;
+  if organization_value is null then raise exception 'Unauthorized'; end if;
+  if monthly_amount < 0 or due_day < 1 or due_day > 28 then raise exception 'Invalid monthly settings'; end if;
+  update public.organizations set monthly_contribution_amount = monthly_amount, monthly_contribution_due_day = due_day where id = organization_value;
+  return monthly_amount;
+end; $$;
+revoke all on function public.update_monthly_contribution_settings(uuid, numeric, smallint) from public;
+grant execute on function public.update_monthly_contribution_settings(uuid, numeric, smallint) to service_role;
+
 create type public.contribution_payment_source as enum ('manual', 'wave');
 create type public.disbursement_type as enum ('general_expense', 'member_aid', 'exceptional_contribution_payment');
 

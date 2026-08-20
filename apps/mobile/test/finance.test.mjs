@@ -71,3 +71,10 @@ test("admin navigation routes finance instead of showing a placeholder", () => {
   const chrome = fs.readFileSync(new URL("../src/components/admin-chrome.tsx", import.meta.url), "utf8");
   assert.match(chrome, /router\.push\("\/\(admin\)\/finances"\)/);
 });
+
+test("finance forms expose contextual fields and settings route", () => {
+  const form = fs.readFileSync(new URL("../app/(admin)/finances/new.tsx", import.meta.url), "utf8");
+  assert.match(form, /exceptional/); assert.match(form, /payment/); assert.match(form, /disbursement/);
+  for (const field of ["justification", "targetMemberIds", "dueId", "reference", "beneficiaryMemberId", "exceptionalContributionId"]) assert.match(form, new RegExp(field));
+  assert.match(fs.readFileSync(new URL("../app/(admin)/settings/finance.tsx", import.meta.url), "utf8"), /dueDay/);
+});

@@ -123,7 +123,7 @@ export type ContributionStatus = FinanceStatus;
 export type FinanceMember = { id: string; firstName: string; lastName: string; phone?: string; memberNumber?: string };
 export type FinancePayment = { id: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" };
 export type MonthlyDue = {
-  id: string; memberId: string; month: string; dueDate: string;
+  id: string; memberId: string; firstName?: string; lastName?: string; phone?: string; month: string; dueDate: string;
   amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus;
 };
 export type ExceptionalContribution = {
@@ -144,7 +144,9 @@ export type AdminFinanceAction =
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
-  | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string };
+  | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
+  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
+  
 
 type FinanceInvoker = <T>(name: string, body: Record<string, unknown>) => Promise<T>;
 export const buildAdminFinanceQuery = (tab: FinanceTab, offset = 0, limit = 30) => ({ tab, offset, limit });
