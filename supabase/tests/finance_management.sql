@@ -1,6 +1,6 @@
 begin;
 
-select plan(48);
+select plan(57);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -8,6 +8,9 @@ select has_table('public', 'contribution_payments', 'contribution payments ledge
 select has_column('public', 'contribution_payments', 'membership_fee_id', 'contribution payments can reference membership fees');
 select has_column('public', 'contribution_payments', 'monthly_contribution_due_id', 'contribution payments can reference monthly dues');
 select has_column('public', 'contribution_payments', 'exceptional_contribution_due_id', 'contribution payments can reference exceptional dues');
+select ok(exists (select 1 from pg_constraint c join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey) where c.conrelid = 'public.contribution_payments'::regclass and c.contype = 'f' and a.attname = 'membership_fee_id' and c.confrelid = 'public.membership_fees'::regclass), 'membership fee payment reference has its required foreign key');
+select ok(exists (select 1 from pg_constraint c join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey) where c.conrelid = 'public.contribution_payments'::regclass and c.contype = 'f' and a.attname = 'monthly_contribution_due_id' and c.confrelid = 'public.monthly_contribution_dues'::regclass), 'monthly contribution payment reference has its required foreign key');
+select ok(exists (select 1 from pg_constraint c join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey) where c.conrelid = 'public.contribution_payments'::regclass and c.contype = 'f' and a.attname = 'exceptional_contribution_due_id' and c.confrelid = 'public.exceptional_contribution_dues'::regclass), 'exceptional contribution payment reference has its required foreign key');
 select has_function('public', 'generate_monthly_contribution_dues', array['uuid', 'date'], 'monthly due generation RPC exists');
 select has_function('public', 'create_exceptional_contribution', array['uuid', 'text', 'numeric', 'date', 'uuid[]'], 'exceptional contribution RPC exists');
 select has_function('public', 'record_contribution_payment', array['uuid', 'text', 'uuid', 'numeric', 'date', 'text', 'text'], 'contribution payment RPC exists');
@@ -73,6 +76,14 @@ select throws_ok($$ delete from public.contribution_payments where monthly_contr
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', ' ', 100, '2026-03-21', 'general_expense', null, null, null) $$, 'Justification is required', 'a general expense requires a nonblank justification');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide externe', 100, '2026-03-21', 'member_aid', '53000000-0000-0000-0000-000000000004', null, 'preuve') $$, 'Member not found', 'member aid rejects a member outside the organization');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Relation etrangere', 100, '2026-03-21', 'exceptional_contribution_payment', null, '54000000-0000-0000-0000-000000000001', 'preuve') $$, 'Contribution not found', 'an exceptional contribution payment rejects a foreign contribution relation');
+select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Depense generale', 100, '2026-03-21', 'general_expense', null, null, 'facture generale');
+select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide Awa', 150, '2026-03-22', 'member_aid', '53000000-0000-0000-0000-000000000001', null, 'recu aide');
+select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Paiement solidarite', 200, '2026-03-23', 'exceptional_contribution_payment', null, (select id from all_active_exceptional), 'recu contribution');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Depense generale')), 'general expenses appear in the disbursements JSON tab');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Aide Awa')), 'member aid appears in the disbursements JSON tab');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Paiement solidarite')), 'exceptional contribution payments appear in the disbursements JSON tab');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Type invalide', 100, '2026-03-24', 'invalid_type', null, null, 'preuve') $$, 'Invalid disbursement type', 'an invalid disbursement type is rejected');
+select public.create_disbursement('51000000-0000-0000-0000-000000000002', 'Depense externe', 100, '2026-03-24', 'general_expense', null, null, 'facture externe');
 
 select ok(not has_function_privilege('anon', 'public.generate_monthly_contribution_dues(uuid, date)', 'execute'), 'anon cannot generate monthly dues');
 select ok(not has_function_privilege('authenticated', 'public.generate_monthly_contribution_dues(uuid, date)', 'execute'), 'authenticated cannot generate monthly dues');
@@ -91,6 +102,8 @@ select ok(not has_function_privilege('authenticated', 'public.get_admin_finance(
 select ok(has_function_privilege('service_role', 'public.get_admin_finance(uuid, text, integer, integer)', 'execute'), 'service role can retrieve finance');
 
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '53000000-0000-0000-0000-000000000004'))), 'monthly finance JSON is isolated between organizations');
+select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('id', '54000000-0000-0000-0000-000000000001'))), 'exceptional finance JSON is isolated between organizations');
+select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Depense externe'))), 'disbursement finance JSON is isolated between organizations');
 select is((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'summary'->>'totalExpected')::numeric, 1000::numeric, 'monthly finance summary expects two active members at 500 each');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 99, 50) @> '{"items": [], "metadata": {"page": 99}}'::jsonb, 'an empty monthly finance page preserves JSON metadata');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 99, 50) @> '{"items": [], "metadata": {"page": 99}}'::jsonb, 'an empty exceptional finance page preserves JSON metadata');
