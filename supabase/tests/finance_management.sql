@@ -1,6 +1,6 @@
 begin;
 
-select plan(77);
+select plan(78);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -133,6 +133,8 @@ select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disb
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Paiement avec membre', 100, '2026-03-24', 'exceptional_contribution_payment', '53000000-0000-0000-0000-000000000001', (select id from all_active_exceptional), 'preuve') $$, 'Exceptional contribution payment cannot have a member', 'an exceptional contribution payment rejects member context');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Type nul', 100, '2026-03-24', null, null, null, 'preuve') $$, 'Invalid disbursement type', 'a null disbursement type is rejected with a controlled error');
 select is(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 1), public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 1), 'paginated finance responses are stable for tied ordering values');
+select public.generate_monthly_contribution_dues('51000000-0000-0000-0000-000000000001', '2026-04-01');
+select is((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'summary'->>'totalExpected')::numeric, 1000::numeric, 'monthly finance objective counts distinct active members across multiple due months');
 
 select * from finish();
 rollback;
