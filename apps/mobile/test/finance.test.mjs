@@ -54,6 +54,17 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.match(page, /wa\.me/);
   assert.match(page, /encodeURIComponent/);
   assert.match(page, /router\.push/);
+  assert.match(page, /totalPaid/);
+  assert.match(page, /totalExpected/);
+  assert.match(page, /totalDisbursed/);
+  assert.match(page, /memberId/);
+});
+
+test("finance migration returns monthly member identity for reminders", () => {
+  const sql = fs.readFileSync(new URL("../../../supabase/migrations/202608200001_finance_management.sql", import.meta.url), "utf8");
+  assert.match(sql, /'firstName',first_name/);
+  assert.match(sql, /'lastName',last_name/);
+  assert.match(sql, /'phone',phone/);
 });
 
 test("admin navigation routes finance instead of showing a placeholder", () => {
