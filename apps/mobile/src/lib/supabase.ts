@@ -144,13 +144,15 @@ export type AdminFinanceAction =
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
-  | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
-  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
+  | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string };
 
-export function getAdminFinance(tab: FinanceTab, offset = 0, limit = 30) {
-  return invokeRegistrationFunction<AdminFinance>("get-admin-finance", { tab, offset, limit });
+type FinanceInvoker = <T>(name: string, body: Record<string, unknown>) => Promise<T>;
+export const buildAdminFinanceQuery = (tab: FinanceTab, offset = 0, limit = 30) => ({ tab, offset, limit });
+
+export function getAdminFinance(tab: FinanceTab, offset = 0, limit = 30, invoke: FinanceInvoker = invokeRegistrationFunction) {
+  return invoke<AdminFinance>("get-admin-finance", buildAdminFinanceQuery(tab, offset, limit));
 }
 
-export function createAdminFinanceAction(action: AdminFinanceAction) {
-  return invokeRegistrationFunction<{ id: string }>("create-admin-finance-action", action);
+export function createAdminFinanceAction(action: AdminFinanceAction, invoke: FinanceInvoker = invokeRegistrationFunction) {
+  return invoke<{ id: string | number }>("create-admin-finance-action", action);
 }
