@@ -24,7 +24,7 @@ export function AdminNavigation({ active, translateY }: { active: AdminSection; 
   return <Container style={[styles.nav, translateY && { transform: [{ translateY }] }]}>
     <Pressable style={styles.navAction} onPress={() => router.replace("/(admin)/dashboard")} accessibilityLabel="Tableau de bord"><Feather name="grid" size={25} color={color("dashboard")} /></Pressable>
     <Pressable style={styles.navAction} onPress={() => router.push("/(admin)/members")} accessibilityLabel="Membres"><Feather name="users" size={25} color={color("members")} /></Pressable>
-    <Pressable style={styles.navAction} onPress={soon} accessibilityLabel="Finances"><Feather name="credit-card" size={25} color={color("finances")} /></Pressable>
+    <Pressable style={styles.navAction} onPress={() => router.push("/(admin)/finances")} accessibilityLabel="Finances"><Feather name="credit-card" size={25} color={color("finances")} /></Pressable>
   </Container>;
 }
 

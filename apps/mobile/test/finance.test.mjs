@@ -43,3 +43,20 @@ test("createAdminFinanceAction forwards the exact action payload at runtime", as
   assert.deepEqual(calls, [["create-admin-finance-action", action]]);
   assert.equal(result.id, 3);
 });
+
+test("finance overview exposes tabs, guarded loading, pagination and WhatsApp reminders", () => {
+  const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
+  assert.match(page, /Mensualit/);
+  assert.match(page, /Cotisations exceptionnelles/);
+  assert.match(page, /D\xE9caissements/);
+  assert.match(page, /requestSequence/);
+  assert.match(page, /getAdminFinance/);
+  assert.match(page, /wa\.me/);
+  assert.match(page, /encodeURIComponent/);
+  assert.match(page, /router\.push/);
+});
+
+test("admin navigation routes finance instead of showing a placeholder", () => {
+  const chrome = fs.readFileSync(new URL("../src/components/admin-chrome.tsx", import.meta.url), "utf8");
+  assert.match(chrome, /router\.push\("\/\(admin\)\/finances"\)/);
+});
