@@ -1,6 +1,6 @@
 begin;
 
-select plan(57);
+select plan(61);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -104,10 +104,14 @@ select ok(has_function_privilege('service_role', 'public.get_admin_finance(uuid,
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '53000000-0000-0000-0000-000000000004'))), 'monthly finance JSON is isolated between organizations');
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('id', '54000000-0000-0000-0000-000000000001'))), 'exceptional finance JSON is isolated between organizations');
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Depense externe'))), 'disbursement finance JSON is isolated between organizations');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '53000000-0000-0000-0000-000000000001')), 'a populated monthly finance page includes an organization member');
+select ok((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'metadata') @> jsonb_build_object('offset', 0, 'limit', 50) and (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'metadata'->>'total')::integer > 0, 'a populated monthly finance page returns pagination metadata');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Solidarite')), 'a populated exceptional finance page includes an organization contribution');
+select ok((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'metadata') @> jsonb_build_object('offset', 0, 'limit', 50) and (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'metadata'->>'total')::integer > 0, 'a populated exceptional finance page returns pagination metadata');
 select is((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'summary'->>'totalExpected')::numeric, 1000::numeric, 'monthly finance summary expects two active members at 500 each');
-select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 99, 50) @> '{"items": [], "metadata": {"page": 99}}'::jsonb, 'an empty monthly finance page preserves JSON metadata');
-select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 99, 50) @> '{"items": [], "metadata": {"page": 99}}'::jsonb, 'an empty exceptional finance page preserves JSON metadata');
-select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 99, 50) @> '{"items": [], "metadata": {"page": 99}}'::jsonb, 'an empty disbursement finance page preserves JSON metadata');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty monthly finance page preserves JSON metadata');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty exceptional finance page preserves JSON metadata');
+select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 99, 50) @> '{"items": [], "metadata": {"offset": 99}}'::jsonb, 'an empty disbursement finance page preserves JSON metadata');
 
 select * from finish();
 rollback;
