@@ -116,3 +116,41 @@ export type CreateAdminMemberInput = {
 export function createAdminMember(input: CreateAdminMemberInput) {
   return invokeRegistrationFunction<{ memberId: string }>("create-admin-member", input);
 }
+
+export type FinanceTab = "monthly" | "exceptional" | "disbursements";
+export type FinanceStatus = "paid" | "partial" | "unpaid";
+export type ContributionStatus = FinanceStatus;
+export type FinanceMember = { id: string; firstName: string; lastName: string; phone?: string; memberNumber?: string };
+export type FinancePayment = { id: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" };
+export type MonthlyDue = {
+  id: string; memberId: string; month: string; dueDate: string;
+  amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus;
+};
+export type ExceptionalContribution = {
+  id: string; label: string; amount: number; dueDate: string; createdAt: string;
+};
+export type Disbursement = {
+  id: string; memberId: string | null; label: string; amount: number; disbursedOn: string;
+  type: "general_expense" | "member_aid" | "exceptional_contribution_payment";
+  exceptionalContributionId: string | null; justification: string;
+};
+export type AdminFinance = {
+  items: MonthlyDue[] | ExceptionalContribution[] | Disbursement[];
+  metadata: { offset: number; limit: number; total: number };
+  summary: Record<string, number>;
+};
+
+export type AdminFinanceAction =
+  | { action: "generateMonthly"; month: string }
+  | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
+  | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
+  | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
+  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
+
+export function getAdminFinance(tab: FinanceTab, offset = 0, limit = 30) {
+  return invokeRegistrationFunction<AdminFinance>("get-admin-finance", { tab, offset, limit });
+}
+
+export function createAdminFinanceAction(action: AdminFinanceAction) {
+  return invokeRegistrationFunction<{ id: string }>("create-admin-finance-action", action);
+}
