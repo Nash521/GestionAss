@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { createAdminFinanceAction, getFunctionErrorMessage } from "../../../src/lib/supabase";
+import { KeyboardSafeScreen } from "../../../src/components/keyboard-safe-screen";
 
 type Kind = "exceptional" | "payment" | "disbursement";
 const today = new Date().toISOString().slice(0, 10);
