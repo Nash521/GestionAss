@@ -143,7 +143,7 @@ export type AdminFinance = {
 export type AdminFinanceAction =
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
-  | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
+  | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
   | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
   | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
   
