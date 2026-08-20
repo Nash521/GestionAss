@@ -1,6 +1,6 @@
 begin;
 
-select plan(61);
+select plan(64);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -67,6 +67,7 @@ select is((select amount_paid from public.monthly_contribution_dues where id = (
 select public.record_contribution_payment('51000000-0000-0000-0000-000000000001', 'monthly', (select id from monthly_due), 300, '2026-03-11', 'REC-002', 'wave');
 select ok((select status = 'paid' and remaining_amount = 0 from public.monthly_contribution_dues where id = (select id from monthly_due)), 'a final payment settles the due');
 select is((select count(*) from public.contribution_payments where monthly_contribution_due_id = (select id from monthly_due)), 2::bigint, 'partial and final payments create two monthly ledger rows');
+select is((select jsonb_agg(jsonb_build_object('source', payment_source, 'reference', payment_reference) order by payment_reference) from public.contribution_payments where monthly_contribution_due_id = (select id from monthly_due)), '[{"source":"manual","reference":"REC-001"},{"source":"wave","reference":"REC-002"}]'::jsonb, 'monthly payment ledger preserves the expected sources and references');
 select ok((select bool_and(membership_fee_id is null and exceptional_contribution_due_id is null) from public.contribution_payments where monthly_contribution_due_id = (select id from monthly_due)), 'monthly ledger rows use only the monthly due reference');
 select throws_ok($$ select public.record_contribution_payment('51000000-0000-0000-0000-000000000001', 'monthly', (select id from monthly_due), 1, '2026-03-12', 'REC-003', 'manual') $$, 'Payment exceeds remaining amount', 'an overpayment is rejected');
 select is((select remaining_amount from public.monthly_contribution_dues where id = (select id from monthly_due)), 0::numeric, 'a rejected overpayment leaves the balance unchanged');
@@ -74,6 +75,8 @@ select throws_ok($$ update public.contribution_payments set payment_reference = 
 select throws_ok($$ delete from public.contribution_payments where monthly_contribution_due_id = (select id from monthly_due) $$, 'Contribution payments are immutable', 'contribution payment ledger rows cannot be deleted');
 
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', ' ', 100, '2026-03-21', 'general_expense', null, null, null) $$, 'Justification is required', 'a general expense requires a nonblank justification');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Montant nul', 0, '2026-03-21', 'general_expense', null, null, 'facture') $$, 'Disbursement amount must be positive', 'a zero disbursement amount is rejected');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Montant negatif', -1, '2026-03-21', 'general_expense', null, null, 'facture') $$, 'Disbursement amount must be positive', 'a negative disbursement amount is rejected');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide externe', 100, '2026-03-21', 'member_aid', '53000000-0000-0000-0000-000000000004', null, 'preuve') $$, 'Member not found', 'member aid rejects a member outside the organization');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Relation etrangere', 100, '2026-03-21', 'exceptional_contribution_payment', null, '54000000-0000-0000-0000-000000000001', 'preuve') $$, 'Contribution not found', 'an exceptional contribution payment rejects a foreign contribution relation');
 select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Depense generale', 100, '2026-03-21', 'general_expense', null, null, 'facture generale');
