@@ -1,6 +1,6 @@
 begin;
 
-select plan(64);
+select plan(69);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
@@ -78,7 +78,9 @@ select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-0
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Montant nul', 0, '2026-03-21', 'general_expense', null, null, 'facture') $$, 'Disbursement amount must be positive', 'a zero disbursement amount is rejected');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Montant negatif', -1, '2026-03-21', 'general_expense', null, null, 'facture') $$, 'Disbursement amount must be positive', 'a negative disbursement amount is rejected');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide externe', 100, '2026-03-21', 'member_aid', '53000000-0000-0000-0000-000000000004', null, 'preuve') $$, 'Member not found', 'member aid rejects a member outside the organization');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide sans membre', 100, '2026-03-21', 'member_aid', null, null, 'preuve') $$, 'Member is required for member aid', 'member aid requires a member context');
 select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Relation etrangere', 100, '2026-03-21', 'exceptional_contribution_payment', null, '54000000-0000-0000-0000-000000000001', 'preuve') $$, 'Contribution not found', 'an exceptional contribution payment rejects a foreign contribution relation');
+select throws_ok($$ select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Paiement sans contribution', 100, '2026-03-21', 'exceptional_contribution_payment', null, null, 'preuve') $$, 'Contribution is required for exceptional contribution payment', 'an exceptional contribution payment requires a contribution context');
 select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Depense generale', 100, '2026-03-21', 'general_expense', null, null, 'facture generale');
 select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Aide Awa', 150, '2026-03-22', 'member_aid', '53000000-0000-0000-0000-000000000001', null, 'recu aide');
 select public.create_disbursement('51000000-0000-0000-0000-000000000001', 'Paiement solidarite', 200, '2026-03-23', 'exceptional_contribution_payment', null, (select id from all_active_exceptional), 'recu contribution');
@@ -107,6 +109,9 @@ select ok(has_function_privilege('service_role', 'public.get_admin_finance(uuid,
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '53000000-0000-0000-0000-000000000004'))), 'monthly finance JSON is isolated between organizations');
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('id', '54000000-0000-0000-0000-000000000001'))), 'exceptional finance JSON is isolated between organizations');
 select ok(not (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Depense externe'))), 'disbursement finance JSON is isolated between organizations');
+select ok(jsonb_array_length(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'items') > 0, 'a populated disbursement finance page contains items');
+select ok((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'metadata') @> jsonb_build_object('offset', 0, 'limit', 50) and (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 0, 50)->'metadata'->>'total')::integer > 0, 'a populated disbursement finance page returns pagination metadata');
+select ok(jsonb_array_length(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 1, 1)->'items') = 1 and (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'disbursements', 1, 1)->'metadata') @> jsonb_build_object('offset', 1, 'limit', 1), 'disbursement finance applies offset and limit to a populated page');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '53000000-0000-0000-0000-000000000001')), 'a populated monthly finance page includes an organization member');
 select ok((public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'metadata') @> jsonb_build_object('offset', 0, 'limit', 50) and (public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'monthly', 0, 50)->'metadata'->>'total')::integer > 0, 'a populated monthly finance page returns pagination metadata');
 select ok(public.get_admin_finance('51000000-0000-0000-0000-000000000001', 'exceptional', 0, 50)->'items' @> jsonb_build_array(jsonb_build_object('label', 'Solidarite')), 'a populated exceptional finance page includes an organization contribution');
