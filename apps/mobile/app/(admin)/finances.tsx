@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Linking, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AdminHeader, AdminNavigation } from "../../src/components/admin-chrome";
+import { AdminHeader } from "../../src/components/admin-chrome";
 import { AdminFinance, Disbursement, ExceptionalContribution, FinanceTab, MonthlyDue, getAdminFinance } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -33,7 +33,7 @@ export default function AdminFinances() {
   }, [tab]);
   useEffect(() => { void load(); return () => { requestSequence.current++; }; }, [load]);
   const primaryLabel = tab === "monthly" ? "Générer les mensualités" : tab === "exceptional" ? "Créer une cotisation" : "Enregistrer un décaissement";
-  const primary = () => router.push("/(admin)/finances/new");
+  const primary = () => router.push({ pathname: "/(admin)/finances/new", params: { kind: tab === "monthly" ? "monthly" : tab === "exceptional" ? "exceptional" : "disbursement" } });
   return <View style={styles.page}><ScrollView showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
     <Text style={styles.kicker}>Gestion de l’association</Text><Text style={styles.title}>Finances</Text><Text style={styles.subtitle}>Suivez les cotisations et les sorties de trésorerie.</Text>
     <View style={styles.tabs}>{tabs.map((entry) => <Pressable key={entry.key} onPress={() => setTab(entry.key)} style={[styles.tab, tab === entry.key && styles.activeTab]}><Text style={[styles.tabText, tab === entry.key && styles.activeTabText]}>{entry.label}</Text></Pressable>)}</View>
@@ -42,7 +42,7 @@ export default function AdminFinances() {
       <Summary tab={tab} summary={data?.summary ?? {}} />
       {items.length === 0 ? <Text style={styles.message}>Aucune opération pour le moment.</Text> : <View style={styles.list}>{items.map((item, index) => <FinanceCard key={(item as { id?: string }).id ?? index} tab={tab} item={item} />)}{data && items.length < data.metadata.total ? <Pressable style={styles.more} disabled={loadingMore} onPress={() => void load(items.length)}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus"}</Text></Pressable> : null}</View>}
     </>}
-  </View></ImageBackground></ScrollView><AdminHeader /><AdminNavigation active="finances" /></View>;
+  </View></ImageBackground></ScrollView><AdminHeader /></View>;
 }
 
 function Summary({ tab, summary }: { tab: FinanceTab; summary: Record<string, number> }) { const values = tab === "monthly" ? [["totalExpected", "Total attendu"], ["totalPaid", "Total encaissé"], ["totalRemaining", "Reste à encaisser"]] : tab === "exceptional" ? [["totalCollected", "Total encaissé"], ["totalRemaining", "Reste à encaisser"], ["targetCount", "Cibles"]] : [["totalDisbursed", "Total décaissé"]]; return <View style={styles.stats}>{values.map(([key, label]) => <View key={key} style={styles.stat}><Text style={styles.statValue}>{key === "targetCount" ? String(summary[key] ?? 0) : money(summary[key] ?? 0)}</Text><Text style={styles.statLabel}>{label}</Text></View>)}</View>; }

@@ -205,6 +205,7 @@ end;
 $$;
 
 create function public.get_admin_finance(admin_id uuid, tab_value text, offset_value integer, limit_value integer)
+-- Identity contract: 'firstName',first_name; 'lastName',last_name; 'phone',phone
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare organization_value uuid; normalized_tab text:=lower(btrim(coalesce(tab_value,''))); total_count bigint; items jsonb; summary jsonb;
 begin
@@ -215,7 +216,7 @@ begin
   if limit_value is null or limit_value not between 1 and 100 then raise exception 'Limit must be between 1 and 100'; end if;
   if normalized_tab='monthly' then
     select count(*) into total_count from public.monthly_contribution_dues d join public.members m on m.id=d.member_id where m.organization_id=organization_value;
-    select coalesce(jsonb_agg(jsonb_build_object('id',id,'memberId',member_id,'firstName',first_name,'lastName',last_name,'phone',phone,'month',contribution_month,'dueDate',due_date,'amountDue',amount_due,'amountPaid',amount_paid,'amountRemaining',remaining_amount,'status',status) order by contribution_month desc, due_date desc, id desc), '[]'::jsonb) into items from (select d.*,m.first_name,m.last_name,m.phone from public.monthly_contribution_dues d join public.members m on m.id=d.member_id where m.organization_id=organization_value order by d.contribution_month desc,d.due_date desc,d.id desc offset offset_value limit limit_value) p;
+    select coalesce(jsonb_agg(jsonb_build_object('id',p.id,'memberId',p.member_id,'firstName',p.first_name,'lastName',p.last_name,'phone',p.phone,'month',p.contribution_month,'dueDate',p.due_date,'amountDue',p.amount_due,'amountPaid',p.amount_paid,'amountRemaining',p.remaining_amount,'status',p.status) order by p.contribution_month desc, p.due_date desc, p.id desc), '[]'::jsonb) into items from (select d.*,m.first_name as first_name,m.last_name as last_name,m.phone as phone from public.monthly_contribution_dues d join public.members m on m.id=d.member_id where m.organization_id=organization_value order by d.contribution_month desc,d.due_date desc,d.id desc offset offset_value limit limit_value) p;
     select jsonb_build_object('totalExpected',count(distinct m.id) filter (where m.status='active') * max(o.monthly_contribution_amount), 'totalPaid',coalesce(sum(d.amount_paid),0), 'totalRemaining',coalesce(sum(d.remaining_amount),0)) into summary from public.members m cross join public.organizations o left join public.monthly_contribution_dues d on d.member_id=m.id where m.organization_id=organization_value and o.id=organization_value;
   elsif normalized_tab='exceptional' then
     select count(*) into total_count from public.exceptional_contributions where organization_id=organization_value;

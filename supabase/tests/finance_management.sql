@@ -1,6 +1,6 @@
 begin;
 
-select plan(78);
+select plan(79);
 
 select has_column('public', 'organizations', 'monthly_contribution_amount', 'organizations stores the monthly contribution amount');
 select has_column('public', 'organizations', 'monthly_contribution_due_day', 'organizations stores the monthly contribution due day');
