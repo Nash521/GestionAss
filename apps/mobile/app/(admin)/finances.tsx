@@ -9,7 +9,7 @@ const background = require("../../assets/Fond_ecranMobile.png");
 const PAGE_SIZE = 20;
 const tabs: Array<{ key: FinanceTab; label: string; icon: "calendar" | "gift" | "external-link" }> = [
   { key: "monthly", label: "Mensualités", icon: "calendar" },
-  { key: "exceptional", label: "Cotisations\nexceptionnelles", icon: "gift" },
+  { key: "exceptional", label: "Cotisations exceptionnelles", icon: "gift" },
   { key: "disbursements", label: "Décaissements", icon: "external-link" },
 ];
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
@@ -36,7 +36,7 @@ export default function AdminFinances() {
   const primary = () => router.push({ pathname: "/(admin)/finances/new", params: { kind: tab === "monthly" ? "monthly" : tab === "exceptional" ? "exceptional" : "disbursement" } });
   return <View style={styles.page}><ScrollView showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
     <Text style={styles.kicker}>Gestion de l’association</Text><Text style={styles.title}>Finances</Text><Text style={styles.subtitle}>Suivez les cotisations et les sorties de trésorerie.</Text>
-    <View style={styles.tabs}>{tabs.map((entry) => { const active = tab === entry.key; return <Pressable key={entry.key} onPress={() => setTab(entry.key)} style={[styles.tab, active && styles.activeTab]}><Feather name={entry.icon} size={17} color={active ? "#FFF" : "#102B3D"} /><Text style={[styles.tabText, active && styles.activeTabText]}>{entry.label}</Text></Pressable>; })}</View>
+    <View style={styles.tabs}>{tabs.map((entry) => { const active = tab === entry.key; return <Pressable key={entry.key} onPress={() => setTab(entry.key)} style={[styles.tab, active && styles.activeTab]}><Feather name={entry.icon} size={17} color={active ? "#FFF" : "#102B3D"} /><Text style={[styles.tabText, active && styles.activeTabText]}>{entry.key === "exceptional" ? <>Cotisations{"\n"}exceptionnelles</> : entry.label}</Text></Pressable>; })}</View>
     <Pressable style={styles.primary} onPress={primary}><Feather name="plus" size={19} color="#FFF" /><Text style={styles.primaryText}>{primaryLabel}</Text></Pressable>
     {loading ? <Text style={styles.message}>Chargement des finances…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les finances.</Text><Pressable onPress={() => void load()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : <>
       <Summary tab={tab} summary={data?.summary ?? {}} />

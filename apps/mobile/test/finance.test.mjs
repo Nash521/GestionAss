@@ -47,7 +47,7 @@ test("createAdminFinanceAction forwards the exact action payload at runtime", as
 test("finance overview exposes tabs, guarded loading, pagination and WhatsApp reminders", () => {
   const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
   assert.match(page, /Mensualit/);
-  assert.match(page, /Cotisations exceptionnelles/);
+  assert.match(page, /Cotisations\s+exceptionnelles/);
   assert.match(page, /D\xE9caissements/);
   assert.match(page, /requestSequence/);
   assert.match(page, /getAdminFinance/);
@@ -58,9 +58,9 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.match(page, /totalExpected/);
   assert.match(page, /totalDisbursed/);
   assert.match(page, /memberId/);
-  assert.match(page, /name="calendar"/);
-  assert.match(page, /name="gift"/);
-  assert.match(page, /name="external-link"/);
+  assert.match(page, /icon:\s*"calendar"/);
+  assert.match(page, /icon:\s*"gift"/);
+  assert.match(page, /icon:\s*"external-link"/);
   assert.match(page, /backgroundColor:\s*"#FFF"/);
   assert.match(page, /borderRadius:\s*\d+/);
   assert.match(page, /activeTab[\s\S]*backgroundColor:\s*"#00A99D"/);
