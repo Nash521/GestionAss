@@ -58,6 +58,15 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.match(page, /totalExpected/);
   assert.match(page, /totalDisbursed/);
   assert.match(page, /memberId/);
+  assert.match(page, /name="calendar"/);
+  assert.match(page, /name="gift"/);
+  assert.match(page, /name="external-link"/);
+  assert.match(page, /backgroundColor:\s*"#FFF"/);
+  assert.match(page, /borderRadius:\s*\d+/);
+  assert.match(page, /activeTab[\s\S]*backgroundColor:\s*"#00A99D"/);
+  assert.match(page, /flex:\s*1/);
+  assert.match(page, /minWidth:\s*0/);
+  assert.doesNotMatch(page, /horizontal/);
 });
 
 test("finance migration returns monthly member identity for reminders", () => {
