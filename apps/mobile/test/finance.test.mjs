@@ -61,6 +61,7 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.match(page, /icon:\s*"calendar"/);
   assert.match(page, /icon:\s*"gift"/);
   assert.match(page, /icon:\s*"external-link"/);
+  assert.match(page, /tabText:[^}]*fontSize:\s*10/);
   assert.match(page, /backgroundColor:\s*"#FFF"/);
   assert.match(page, /borderRadius:\s*\d+/);
   assert.match(page, /activeTab[\s\S]*backgroundColor:\s*"#00A99D"/);
