@@ -139,8 +139,10 @@ export type AdminFinance = {
   metadata: { offset: number; limit: number; total: number };
   summary: Record<string, number>;
 };
+export type MonthlyContributionSettings = { monthlyAmount: number; dueDay: number };
 
 export type AdminFinanceAction =
+  | { action: "getMonthlySettings" }
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
@@ -157,4 +159,8 @@ export function getAdminFinance(tab: FinanceTab, offset = 0, limit = 30, invoke:
 
 export function createAdminFinanceAction(action: AdminFinanceAction, invoke: FinanceInvoker = invokeRegistrationFunction) {
   return invoke<{ id: string | number }>("create-admin-finance-action", action);
+}
+
+export function getMonthlyContributionSettings(invoke: FinanceInvoker = invokeRegistrationFunction) {
+  return invoke<{ id: MonthlyContributionSettings }>("create-admin-finance-action", { action: "getMonthlySettings" });
 }

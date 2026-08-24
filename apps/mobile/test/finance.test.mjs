@@ -88,3 +88,15 @@ test("finance forms expose contextual fields and settings route", () => {
   for (const field of ["justification", "targetMemberIds", "dueId", "reference", "beneficiaryMemberId", "exceptionalContributionId"]) assert.match(form, new RegExp(field));
   assert.match(fs.readFileSync(new URL("../app/(admin)/settings/finance.tsx", import.meta.url), "utf8"), /dueDay/);
 });
+
+test("finance settings loads existing values before enabling save", () => {
+  const client = fs.readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8");
+  const action = fs.readFileSync(new URL("../../../supabase/functions/create-admin-finance-action/index.ts", import.meta.url), "utf8");
+  const settings = fs.readFileSync(new URL("../app/(admin)/settings/finance.tsx", import.meta.url), "utf8");
+  assert.match(client, /getMonthlyContributionSettings/);
+  assert.match(action, /getMonthlySettings/);
+  assert.match(action, /get_monthly_contribution_settings/);
+  assert.match(settings, /getMonthlyContributionSettings/);
+  assert.match(settings, /useEffect/);
+  assert.match(settings, /loading/);
+});

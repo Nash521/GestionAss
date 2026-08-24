@@ -38,6 +38,7 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const db = { auth: { getUser: async () => identity }, rpc: async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return { data: "result-id", error: null }; } };
   const inputs = [
+    { action: "getMonthlySettings" },
     { action: "generateMonthly", month: "2026-08-01" },
     { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId] },
     { action: "recordPayment", kind: "monthly", dueId, amount: 100, paidOn: "2026-08-20", reference: "ref", source: "manual" },
@@ -46,7 +47,7 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
   ];
   for (const input of inputs) if ((await handler(db)(request(input))).status !== 200) throw new Error(`expected success for ${input.action}`);
   const names = calls.map((call) => call.name).join(",");
-  if (names !== "generate_monthly_contribution_dues,create_exceptional_contribution,record_contribution_payment,create_disbursement,update_monthly_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
+  if (names !== "get_monthly_contribution_settings,generate_monthly_contribution_dues,create_exceptional_contribution,record_contribution_payment,create_disbursement,update_monthly_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
   if (calls.some((call) => call.args.admin_id !== identity.data.user.id)) throw new Error("expected authenticated admin id");
 });
 Deno.test("create-admin-finance-action maps business errors to 400 and outages to safe 503", async () => {

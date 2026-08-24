@@ -8,6 +8,7 @@ type DatabaseError = { status?: number; message?: string };
 type Database = { auth: { getUser: (token: string) => Promise<{ data: { user: { id: string } | null }; error: DatabaseError | null }> }; rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: DatabaseError | null }> };
 type DatabaseFactory = () => Database;
 type Input =
+  | { action: "getMonthlySettings" }
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
@@ -21,6 +22,7 @@ const nullableUuid = (value: unknown) => value === null || (typeof value === "st
 const parseInput = (body: unknown): Input | null => {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
   const value = body as Record<string, unknown>;
+  if (value.action === "getMonthlySettings" && exact(value, ["action"])) return { action: value.action };
   if (value.action === "generateMonthly" && exact(value, ["action", "month"]) && validDate(value.month)) return { action: value.action, month: value.month };
   if (value.action === "createExceptional" && exact(value, ["action", "label", "amount", "dueDate", "targetMemberIds"]) && nonBlank(value.label) && positive(value.amount) && validDate(value.dueDate) && Array.isArray(value.targetMemberIds) && value.targetMemberIds.every((id) => typeof id === "string" && uuid.test(id))) return value as Input;
   if (value.action === "recordPayment" && Object.keys(value).every((key) => ["action", "kind", "dueId", "amount", "paidOn", "reference", "source"].includes(key)) && ["membership", "monthly", "exceptional"].includes(value.kind as string) && typeof value.dueId === "string" && uuid.test(value.dueId) && positive(value.amount) && validDate(value.paidOn) && (value.reference === undefined || typeof value.reference === "string") && ["manual", "wave"].includes(value.source as string)) return value as Input;
@@ -34,6 +36,7 @@ const business = (error: DatabaseError) => /^(?:Label|Contribution amount|Due da
 const databaseFor = (factory?: DatabaseFactory): Database | null => { if (factory) return factory(); const url = Deno.env.get("SUPABASE_URL"); const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"); return url && serviceKey ? createClient(url, serviceKey, { auth: { persistSession: false } }) as unknown as Database : null; };
 const rpcFor = (input: Input, adminId: string): [string, Record<string, unknown>] => {
   switch (input.action) {
+    case "getMonthlySettings": return ["get_monthly_contribution_settings", { admin_id: adminId }];
     case "generateMonthly": return ["generate_monthly_contribution_dues", { admin_id: adminId, month_value: input.month }];
     case "createExceptional": return ["create_exceptional_contribution", { admin_id: adminId, contribution_label: input.label.trim(), contribution_amount: input.amount, contribution_due_date: input.dueDate, selected_member_ids: input.targetMemberIds }];
     case "recordPayment": return ["record_contribution_payment", { admin_id: adminId, due_kind: input.kind, due_id: input.dueId, payment_amount: input.amount, payment_date: input.paidOn, payment_reference_value: input.reference ?? "", payment_source_value: input.source }];
