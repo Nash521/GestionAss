@@ -1,0 +1,26 @@
+project_id = "gestion-ass"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+major_version = 17
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+enable_signup = true
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = false
+
+[auth.sms.twilio]
+enabled = true
+account_sid = "AC00000000000000000000000000000000"
+auth_token = "local-development-token"
+message_service_sid = "MG00000000000000000000000000000000"
