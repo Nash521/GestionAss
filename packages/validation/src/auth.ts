@@ -16,6 +16,7 @@ export function normalizeIvorianPhone(value: string): string {
 export const passwordSchema = z
   .string()
   .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
+  .regex(/[a-z]/, "Le mot de passe doit contenir une minuscule.")
   .regex(/[A-Z]/, "Le mot de passe doit contenir une majuscule.")
   .regex(/\d/, "Le mot de passe doit contenir un chiffre.")
   .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir un caractère spécial.");

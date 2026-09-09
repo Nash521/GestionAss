@@ -176,6 +176,7 @@ test('the sign-up screen exposes Feather icons, password criteria and the tempor
   assert.match(source, /@expo\/vector-icons/);
   assert.match(source, /showPassword/);
   assert.match(source, /showPasswordConfirmation/);
+  assert.match(source, /Une minuscule/);
   assert.match(source, /Une majuscule/);
   assert.match(source, /Un chiffre/);
   assert.match(source, /Un caractère spécial/);
@@ -252,6 +253,16 @@ test('the password reset screen sends an OTP and returns to login after reset', 
   assert.match(source, /reset-password-with-otp/);
   assert.match(source, /clearBiometricLogin/);
   assert.match(source, /router\.replace\("\/login"\)/);
+});
+
+test('the password reset screen enforces the five password rules before submission', async () => {
+  const source = await readFile(new URL('../app/(auth)/password-reset.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /\[a-z\]/);
+  assert.match(source, /\[A-Z\]/);
+  assert.match(source, /\\d/);
+  assert.match(source, /\[\^A-Za-z0-9\]/);
+  assert.match(source, /au moins 8 caractères, une minuscule, une majuscule, un chiffre et un caractère spécial/);
 });
 
 test('the admin dashboard uses protected statistics and its supplied background', async () => {

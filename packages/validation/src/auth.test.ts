@@ -41,7 +41,7 @@ describe("signUpSchema", () => {
     expect(result.phone).toBe("+2250701020304");
   });
 
-  it.each(["Short1!", "lowercase1!", "NoDigits!", "NoSpecial1"])(
+  it.each(["Short1!", "lowercase1!", "ABCDEFG1!", "NoDigits!", "NoSpecial1"])(
     "rejects a password that does not meet the policy: %s",
     (password) => {
       expect(
@@ -60,13 +60,14 @@ describe("signUpSchema", () => {
       firstName: "Awa",
       lastName: "Koné",
       phone: "0701020304",
-      password: "short",
+      password: "",
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.password).toEqual([
         "Le mot de passe doit contenir au moins 8 caractères.",
+        "Le mot de passe doit contenir une minuscule.",
         "Le mot de passe doit contenir une majuscule.",
         "Le mot de passe doit contenir un chiffre.",
         "Le mot de passe doit contenir un caractère spécial.",

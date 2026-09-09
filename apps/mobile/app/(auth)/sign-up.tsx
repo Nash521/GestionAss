@@ -27,13 +27,14 @@ export default function SignUp() {
 
   const passwordRequirements = [
     ["8 caractères", password.length >= 8],
+    ["Une minuscule", /[a-z]/.test(password)],
     ["Une majuscule", /[A-Z]/.test(password)],
     ["Un chiffre", /\d/.test(password)],
     ["Un caractère spécial", /[^A-Za-z0-9]/.test(password)],
   ] as const;
 
   const submit = async () => {
-    if (!invitationCode.trim() || !firstName.trim() || !lastName.trim() || !/^\+2250[157]\d{8}$/.test(phone) || password.length < 8) {
+    if (!invitationCode.trim() || !firstName.trim() || !lastName.trim() || !/^\+2250[157]\d{8}$/.test(phone) || !passwordRequirements.every(([, valid]) => valid)) {
       setError("Veuillez remplir correctement tous les champs.");
       return;
     }

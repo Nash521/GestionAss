@@ -4,11 +4,28 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { clearBiometricLogin } from "../../src/lib/biometric-session";
 import { invokeRegistrationFunction } from "../../src/lib/supabase";
 
+function isStrongPassword(value: string) {
+  return value.length >= 8 &&
+    /[a-z]/.test(value) &&
+    /[A-Z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value);
+}
+
 export default function PasswordReset() {
   const [step, setStep] = useState<"phone" | "code" | "password">("phone"); const [phone, setPhone] = useState(""); const [code, setCode] = useState(""); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
   const send = async () => { setLoading(true); setError(null); try { await invokeRegistrationFunction("send-password-reset-otp", { phone }); setStep("code"); } catch { setError("Impossible d’envoyer le code."); } finally { setLoading(false); } };
   const verify = () => { if (!/^\d{6}$/.test(code)) return setError("Saisissez le code à six chiffres."); setError(null); setStep("password"); };
-  const reset = async () => { if (password.length < 8 || password !== confirmation) return setError("Les mots de passe doivent correspondre et contenir au moins 8 caractères."); setLoading(true); setError(null); try { await invokeRegistrationFunction("reset-password-with-otp", { phone, code, password }); await clearBiometricLogin(); router.replace("/login"); } catch { setError("Le code est invalide ou expiré."); } finally { setLoading(false); } };
+  const reset = async () => {
+    if (!isStrongPassword(password)) {
+      return setError("Le mot de passe doit contenir au moins 8 caractères, une minuscule, une majuscule, un chiffre et un caractère spécial.");
+    }
+    if (password !== confirmation) return setError("Les mots de passe ne correspondent pas.");
+    setLoading(true); setError(null);
+    try { await invokeRegistrationFunction("reset-password-with-otp", { phone, code, password }); await clearBiometricLogin(); router.replace("/login"); }
+    catch { setError("Le code est invalide ou expiré."); }
+    finally { setLoading(false); }
+  };
   return <View style={styles.page}><Text style={styles.title}>Mot de passe oublié</Text>{step === "phone" ? <><Text style={styles.message}>Saisissez votre numéro pour recevoir un code.</Text><TextInput style={styles.input} placeholder="Téléphone (+225...)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" /><Pressable style={styles.button} onPress={send} disabled={loading}><Text style={styles.label}>Envoyer le code</Text></Pressable></> : null}{step === "code" ? <><Text style={styles.message}>Saisissez le code reçu par SMS.</Text><TextInput style={styles.input} placeholder="Code à 6 chiffres" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} /><Pressable style={styles.button} onPress={verify}><Text style={styles.label}>Vérifier le code</Text></Pressable></> : null}{step === "password" ? <><TextInput style={styles.input} placeholder="Nouveau mot de passe" value={password} onChangeText={setPassword} secureTextEntry /><TextInput style={styles.input} placeholder="Confirmer le mot de passe" value={confirmation} onChangeText={setConfirmation} secureTextEntry /><Pressable style={styles.button} onPress={reset} disabled={loading}><Text style={styles.label}>Modifier le mot de passe</Text></Pressable></> : null}{error ? <Text style={styles.error}>{error}</Text> : null}<Pressable onPress={() => router.replace("/login")}><Text style={styles.back}>Retour à la connexion</Text></Pressable></View>;
 }
 const styles = StyleSheet.create({ page: { flex: 1, justifyContent: "center", padding: 24 }, title: { color: "#102B3D", fontSize: 28, fontWeight: "700", textAlign: "center" }, message: { color: "#506275", marginVertical: 18, textAlign: "center" }, input: { borderColor: "#CBD5DC", borderRadius: 12, borderWidth: 1, marginBottom: 12, padding: 13 }, button: { backgroundColor: "#00A99D", borderRadius: 12, padding: 14 }, label: { color: "#FFFFFF", fontWeight: "700", textAlign: "center" }, error: { color: "#B3261E", marginTop: 12, textAlign: "center" }, back: { color: "#00A99D", marginTop: 24, textAlign: "center" } });
