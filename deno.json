@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "test:edge": "deno test --allow-net --allow-env --allow-run supabase/functions"
+    "test:edge": "deno test --no-npm --allow-net --allow-env --allow-run supabase/functions"
   }
 }
