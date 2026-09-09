@@ -8,7 +8,7 @@ const reservationId = "11111111-1111-1111-1111-111111111111";
 
 type MockOutcome = "ok" | "error" | "false";
 
-async function startResetFunction(mock: { reserve?: MockOutcome; update?: MockOutcome; finalize?: MockOutcome; release?: MockOutcome; signOut?: MockOutcome }) {
+async function startResetFunction(mock: { reserve?: MockOutcome; update?: MockOutcome; finalize?: MockOutcome; release?: MockOutcome }) {
   const events: string[] = [];
   const database = Deno.serve({ port: 0 }, async (request) => {
     const url = new URL(request.url);
@@ -28,11 +28,7 @@ async function startResetFunction(mock: { reserve?: MockOutcome; update?: MockOu
       if (request.method === "PUT" && mock.update === "error") return Response.json({ message: "temporary auth outage" }, { status: 500 });
       return Response.json({});
     }
-    if (url.pathname === "/auth/v1/logout") {
-      events.push("signOut");
-      if (mock.signOut === "error") return Response.json({ message: "temporary auth outage" }, { status: 500 });
-      return Response.json({});
-    }
+    if (url.pathname === "/auth/v1/logout") return new Response("invalid server sign-out", { status: 500 });
     return new Response("not found", { status: 404 });
   });
   const databasePort = (database.addr as Deno.NetAddr).port;
@@ -133,23 +129,12 @@ Deno.test("reset-password-with-otp does not sign out when OTP finalization fails
   }
 });
 
-Deno.test("reset-password-with-otp finalizes before globally signing out", async () => {
+Deno.test("reset-password-with-otp succeeds after finalization without server sign-out", async () => {
   const server = await startResetFunction({});
   try {
     const response = await server.request();
     if (response.status !== 200) throw new Error(`expected 200, got ${response.status}`);
-    if (server.events.join(",") !== "reserve_password_reset_otp,updateUser,finalize_password_reset_otp,signOut") throw new Error(`successful reset did not finalize before sign-out: ${server.events.join(",")}`);
-  } finally {
-    await server.stop();
-  }
-});
-
-Deno.test("reset-password-with-otp reports session revocation failures after finalization", async () => {
-  const server = await startResetFunction({ signOut: "error" });
-  try {
-    const response = await server.request();
-    if (response.status !== 503) throw new Error(`expected 503, got ${response.status}`);
-    if (server.events.join(",") !== "reserve_password_reset_otp,updateUser,finalize_password_reset_otp,signOut") throw new Error("session revocation failure must keep the OTP finalized");
+    if (server.events.join(",") !== "reserve_password_reset_otp,updateUser,finalize_password_reset_otp") throw new Error(`reset attempted an invalid server sign-out: ${server.events.join(",")}`);
   } finally {
     await server.stop();
   }

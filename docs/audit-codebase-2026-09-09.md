@@ -34,6 +34,10 @@ Le dépôt principal `main` ne contient que les spécifications et les maquettes
 
 Caisses, transferts, reçus, corrections et annulations comptables complètes, notifications, rapports/export, import historique, espace membre complet et application web d'administration.
 
+## Limite de révocation des sessions après réinitialisation
+
+Supabase ne permet pas à une Edge Function de révoquer les refresh tokens d'un utilisateur avec son UUID : l'opération `signOut` côté serveur exige le JWT utilisateur. Les access tokens déjà émis ne sont pas révocables avant leur expiration. Une révocation globale fiable après une réinitialisation demandera une conception distincte, par exemple une version de session contrôlée à chaque endpoint ; le parcours actuel ne prétend donc pas révoquer les sessions existantes.
+
 ## Ordre de correction retenu
 
 1. Sécurité de l'inscription et de la réinitialisation.
