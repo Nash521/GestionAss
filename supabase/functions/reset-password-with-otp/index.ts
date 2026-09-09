@@ -62,6 +62,15 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     console.error("Password reset OTP finalization failed");
     return response({ error: "Service unavailable" }, 503);
   }
-  await database.auth.admin.signOut(membership.user_id, "global");
+  try {
+    const { error } = await database.auth.admin.signOut(membership.user_id, "global");
+    if (error) {
+      console.error("Password reset session revocation failed");
+      return response({ error: "Service unavailable" }, 503);
+    }
+  } catch {
+    console.error("Password reset session revocation failed");
+    return response({ error: "Service unavailable" }, 503);
+  }
   return response({ reset: true });
 });
