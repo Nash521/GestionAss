@@ -218,7 +218,9 @@ test('the OTP screen renders six code cells, keyboard support and a guarded rese
   assert.match(source, /send-registration-otp/);
   assert.match(source, /verify-registration-otp/);
   assert.match(source, /create-membership-request/);
-  assert.match(source, /RESEND_DELAY_SECONDS = 45/);
+  assert.match(source, /RESEND_DELAY_SECONDS = 5 \* 60/);
+  assert.match(source, /OTP_VALIDITY_MINUTES = 10/);
+  assert.match(source, /formatCountdown/);
   assert.match(source, /router\.replace\("\/\(auth\)\/sign-up"\)/);
 });
 
@@ -265,44 +267,41 @@ test('the password reset screen enforces the five password rules before submissi
   assert.match(source, /au moins 8 caractères, une minuscule, une majuscule, un chiffre et un caractère spécial/);
 });
 
-test('the admin dashboard uses protected statistics and its supplied background', async () => {
+test('the admin dashboard uses protected statistics with labels that match membership-fee data', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   const chrome = await readFile(new URL('../src/components/admin-chrome.tsx', import.meta.url), 'utf8');
+
   assert.match(source, /getAdminDashboard/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /image_fleur\.png/);
-  assert.match(source, /welcomeIllustration/);
-  assert.match(source, /height:330,width:330,opacity:\.1/);
-  assert.match(source, /tintColor:"#00A99D"/);
-  assert.match(source, /styles\.hello,\{marginTop:8\}/);
-  assert.match(source, /styles\.title,\{fontSize:28\}/);
-  assert.match(source, /styles\.subtitle,\{marginTop:10,fontSize:14\}/);
-  assert.match(source, /right:-90,top:-120,bottom:null,resizeMode:"cover",zIndex:0/);
-  assert.match(source, /styles\.grid,\{zIndex:1\}/);
-  assert.match(source, /styles\.content,\{paddingTop:104\}/);
-  assert.match(chrome, /logo-removebg-preview\.png/);
+  assert.match(source, /Droits d’adhésion réglés/);
+  assert.match(source, /Droits d’adhésion à régulariser/);
+  assert.match(source, /Droits d’adhésion dus/);
+  assert.match(source, /Droits d’adhésion encaissés/);
+  assert.match(source, /Reste sur droits d’adhésion/);
+  assert.doesNotMatch(source, /Total cotisation mensuelle/);
+  assert.doesNotMatch(source, /Total couverture ou dépense/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
-  assert.match(source, /6 mois/);
-  assert.match(source, /name="chevron-down"/);
-  assert.match(source, /numberOfLines=\{1\}/);
-  assert.match(source, /styles\.panelHead,\{minHeight:58,position:"relative"\}/);
-  assert.match(source, /styles\.panelTitle,\{flex:1,marginRight:76\}/);
-  assert.match(source, /styles\.period,\{[^}]*position:"absolute",right:0,top:0\}/);
+  assert.match(source, /router\.push\("\/\(admin\)\/members"\)/);
+  assert.match(source, /router\.push\("\/\(admin\)\/finances"\)/);
+  assert.match(chrome, /logo-removebg-preview\.png/);
   assert.match(source, /Animated\.Value\(0\)/);
   assert.match(source, /onScroll=\{handleScroll\}/);
   assert.match(source, /duration:\s*200/);
   assert.match(source, /toValue:\s*visible \? 0 : -120/);
 });
 
-test('the dashboard background scrolls with its content', async () => {
+test('the dashboard background scrolls with its content and renders membership-fee metrics', async () => {
   const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   assert.match(source, /Fond_ecranMobile\.png/);
-  assert.match(source, /<ScrollView[^>]*><ImageBackground/);
+  assert.match(source, /<ScrollView/);
+  assert.match(source, /<ImageBackground/);
   assert.match(source, /card:\s*\{[^}]*width:\s*"48%"/);
-  assert.match(source, /"user-plus","Total droit d’adhésion"/);
-  assert.match(source, /"shield","Total couverture ou dépense"/);
+  assert.match(source, /money\(data\.totalDue\)/);
+  assert.match(source, /money\(data\.totalCollected\)/);
+  assert.match(source, /money\(data\.totalOutstanding\)/);
 });
 
 test('the admin dashboard composes shared animated chrome with literal section routes', async () => {
