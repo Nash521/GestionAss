@@ -21,20 +21,47 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const { data: membership } = await database.from("membership_requests").select("user_id,status,users!inner(is_active)").eq("phone", phone).maybeSingle();
   const account = Array.isArray(membership?.users) ? membership.users[0] : membership?.users;
   if (membership?.status !== "approved" || !account?.is_active) return response({ error: "Invalid or expired code" }, 400);
-  const { data: reservation } = await database.rpc("reserve_password_reset_otp", { p_phone: phone, p_code_hash: hashToDatabase(await hashOtp(code, otpHashSecret)) });
+  let reservation: unknown;
+  try {
+    const result = await database.rpc("reserve_password_reset_otp", { p_phone: phone, p_code_hash: hashToDatabase(await hashOtp(code, otpHashSecret)) });
+    if (result.error) {
+      console.error("Password reset OTP reservation failed");
+      return response({ error: "Service unavailable" }, 503);
+    }
+    reservation = result.data;
+  } catch {
+    console.error("Password reset OTP reservation failed");
+    return response({ error: "Service unavailable" }, 503);
+  }
   if (typeof reservation !== "string") return response({ error: "Invalid or expired code" }, 400);
+  const releaseReservation = async () => {
+    try {
+      const { data, error } = await database.rpc("release_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+      if (error || data !== true) console.error("Password reset OTP release failed");
+    } catch {
+      console.error("Password reset OTP release failed");
+    }
+  };
   try {
     const { error } = await database.auth.admin.updateUserById(membership.user_id, { password });
     if (error) {
-      await database.rpc("release_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+      await releaseReservation();
       return response({ error: "Service unavailable" }, 503);
     }
   } catch {
-    await database.rpc("release_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+    await releaseReservation();
     return response({ error: "Service unavailable" }, 503);
   }
-  const { data: finalized } = await database.rpc("finalize_password_reset_otp", { p_phone: phone, p_reservation: reservation });
-  if (finalized !== true) return response({ error: "Service unavailable" }, 503);
+  try {
+    const { data: finalized, error: finalizeError } = await database.rpc("finalize_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+    if (finalizeError || finalized !== true) {
+      console.error("Password reset OTP finalization failed");
+      return response({ error: "Service unavailable" }, 503);
+    }
+  } catch {
+    console.error("Password reset OTP finalization failed");
+    return response({ error: "Service unavailable" }, 503);
+  }
   await database.auth.admin.signOut(membership.user_id, "global");
   return response({ reset: true });
 });
