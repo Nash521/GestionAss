@@ -11,36 +11,101 @@ const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "curren
 const soon = () => Alert.alert("Bientôt disponible", "Cette fonctionnalité arrive prochainement.");
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<DashboardSummary | null>(null); const [error, setError] = useState(false);
+  const [data, setData] = useState<DashboardSummary | null>(null);
+  const [error, setError] = useState(false);
   const previousOffset = useRef(0);
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const chromeVisible = useRef(true);
+
   const animateChrome = (visible: boolean) => {
     if (chromeVisible.current === visible) return;
     chromeVisible.current = visible;
     Animated.timing(headerTranslateY, { toValue: visible ? 0 : -120, duration: 200, useNativeDriver: true }).start();
   };
+
   const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offset = Math.max(0, nativeEvent.contentOffset.y); const delta = offset - previousOffset.current;
+    const offset = Math.max(0, nativeEvent.contentOffset.y);
+    const delta = offset - previousOffset.current;
     if (Math.abs(delta) >= 12) animateChrome(delta < 0 || offset < 12);
     previousOffset.current = offset;
   };
+
   useEffect(() => { void getAdminDashboard().then(setData).catch(() => setError(true)); }, []);
+
   if (!data && !error) return <View style={styles.center}><Text>Chargement du tableau de bord…</Text></View>;
   if (error || !data) return <View style={styles.center}><Text>Impossible de charger le tableau de bord.</Text></View>;
-  const cards = [["users","Total membres",String(data.totalMembers),"Voir les membres"],["calendar","Total à jour",String(data.membersPaid),"Cotisations réglées"],["clock","Total en retard",String(data.membersLate),"À relancer"],["user-plus","Total droit d’adhésion",money(data.totalDue),"Montant dû"],["file-text","Total cotisation mensuelle",money(data.totalCollected),"Recettes"],["shield","Total couverture ou dépense",money(data.totalOutstanding),"Solde"]] as const;
+
+  const cards = [
+    ["users", "Total membres", String(data.totalMembers), "Voir les membres"],
+    ["check-circle", "Droits d’adhésion réglés", String(data.membersPaid), "Membres à jour sur l’adhésion"],
+    ["clock", "Droits d’adhésion à régulariser", String(data.membersLate), "Impayés ou paiements partiels"],
+    ["user-plus", "Droits d’adhésion dus", money(data.totalDue), "Montant total attendu"],
+    ["file-text", "Droits d’adhésion encaissés", money(data.totalCollected), "Montant déjà réglé"],
+    ["credit-card", "Reste sur droits d’adhésion", money(data.totalOutstanding), "Montant restant à encaisser"],
+  ] as const;
+
   return <View style={styles.page}>
-    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} onScroll={handleScroll} scrollEventThrottle={16}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
-  <View style={[styles.content,{paddingTop:104}]}>
-    <View style={styles.welcome}><Image source={flower} style={[styles.welcomeIllustration,{height:330,width:330,opacity:.1,right:-90,top:-120,bottom:null,resizeMode:"cover",zIndex:0,tintColor:"#00A99D"}]} /><Text style={[styles.hello,{marginTop:8}]}>Bonjour, Admin</Text><Text style={[styles.title,{fontSize:28}]}>Tableau de bord</Text><Text style={[styles.subtitle,{marginTop:10,fontSize:14}]}>Voici un aperçu de l’activité de {data.organizationName}.</Text></View>
-    <View style={[styles.grid,{zIndex:1}]}>{cards.map(([icon,title,value,caption], index) => <Pressable key={title} style={styles.card} onPress={index === 0 ? soon : undefined}><View style={styles.icon}><Feather name={icon as never} size={24} color="#00A99D" /></View><Text style={styles.cardTitle}>{title}</Text><Text style={styles.value}>{value}</Text><Text style={styles.caption}>{caption}</Text></Pressable>)}</View>
-    <Pressable style={styles.requests} onPress={() => router.push("/(admin)/membership-requests")}><Text style={styles.requestsText}>Gérer les demandes d’adhésion</Text><Feather name="arrow-right" size={20} color="#FFF" /></Pressable>
-    <View style={styles.panel}><View style={[styles.panelHead,{minHeight:58,position:"relative"}]}><Text style={[styles.panelTitle,{flex:1,marginRight:76}]} numberOfLines={2}>Graphique évolution des cotisations</Text><View style={[styles.period,{alignItems:"center",flexDirection:"row",gap:4,position:"absolute",right:0,top:0}]}><Text style={{color:"#65758A"}} numberOfLines={1}>6 mois</Text><Feather name="chevron-down" size={14} color="#65758A" /></View></View><View style={styles.graph}><Feather name="bar-chart-2" size={42} color="#00A99D" /><Text style={styles.emptyTitle}>Module Finances bientôt disponible</Text><Text style={styles.emptyText}>L’évolution mensuelle apparaîtra ici.</Text></View></View>
-    <View style={styles.panel}><View style={styles.panelHead}><Text style={styles.panelTitle}>Dernières transactions</Text><Pressable onPress={soon}><Text style={styles.link}>Voir tout  →</Text></Pressable></View><View style={styles.transaction}><Feather name="activity" size={25} color="#00A99D" /><View><Text style={styles.emptyTitle}>Aucune transaction</Text><Text style={styles.emptyText}>Le module Finances sera bientôt disponible.</Text></View></View></View>
-  </View></ImageBackground></ScrollView>
+    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} onScroll={handleScroll} scrollEventThrottle={16}>
+      <ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
+        <View style={[styles.content, { paddingTop: 104 }]}>
+          <View style={styles.welcome}>
+            <Image source={flower} style={[styles.welcomeIllustration, { height: 330, width: 330, opacity: .1, right: -90, top: -120, bottom: null, resizeMode: "cover", zIndex: 0, tintColor: "#00A99D" }]} />
+            <Text style={[styles.hello, { marginTop: 8 }]}>Bonjour, Admin</Text>
+            <Text style={[styles.title, { fontSize: 28 }]}>Tableau de bord</Text>
+            <Text style={[styles.subtitle, { marginTop: 10, fontSize: 14 }]}>Voici un aperçu de l’activité de {data.organizationName}.</Text>
+          </View>
+
+          <View style={[styles.grid, { zIndex: 1 }]}>
+            {cards.map(([icon, title, value, caption], index) => (
+              <Pressable key={title} style={styles.card} onPress={index === 0 ? () => router.push("/(admin)/members") : undefined}>
+                <View style={styles.icon}><Feather name={icon as never} size={24} color="#00A99D" /></View>
+                <Text style={styles.cardTitle}>{title}</Text>
+                <Text style={styles.value}>{value}</Text>
+                <Text style={styles.caption}>{caption}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable style={styles.requests} onPress={() => router.push("/(admin)/membership-requests")}> 
+            <Text style={styles.requestsText}>Gérer les demandes d’adhésion</Text>
+            <Feather name="arrow-right" size={20} color="#FFF" />
+          </Pressable>
+
+          <View style={styles.panel}>
+            <View style={[styles.panelHead, { minHeight: 58, position: "relative" }]}> 
+              <Text style={[styles.panelTitle, { flex: 1, marginRight: 76 }]} numberOfLines={2}>Graphique évolution des cotisations</Text>
+              <View style={[styles.period, { alignItems: "center", flexDirection: "row", gap: 4, position: "absolute", right: 0, top: 0 }]}> 
+                <Text style={{ color: "#65758A" }} numberOfLines={1}>6 mois</Text>
+                <Feather name="chevron-down" size={14} color="#65758A" />
+              </View>
+            </View>
+            <View style={styles.graph}>
+              <Feather name="bar-chart-2" size={42} color="#00A99D" />
+              <Text style={styles.emptyTitle}>Graphique détaillé bientôt disponible</Text>
+              <Text style={styles.emptyText}>L’évolution mensuelle des cotisations apparaîtra ici.</Text>
+            </View>
+          </View>
+
+          <View style={styles.panel}>
+            <View style={styles.panelHead}>
+              <Text style={styles.panelTitle}>Dernières transactions</Text>
+              <Pressable onPress={() => router.push("/(admin)/finances")}><Text style={styles.link}>Voir tout  →</Text></Pressable>
+            </View>
+            <View style={styles.transaction}>
+              <Feather name="activity" size={25} color="#00A99D" />
+              <View>
+                <Text style={styles.emptyTitle}>Aperçu des transactions</Text>
+                <Text style={styles.emptyText}>Consultez le détail dans la section Finances.</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
+    </ScrollView>
     <AdminHeader translateY={headerTranslateY} />
   </View>;
 }
+
 const styles = StyleSheet.create({
   page: { flex: 1 }, scroll: { flex: 1 }, background: { minHeight: "100%" }, backgroundImage: { resizeMode: "cover" }, content: { gap: 14, padding: 20, paddingBottom: 112, paddingTop: 122 }, center: { alignItems: "center", flex: 1, justifyContent: "center" },
   welcome: { justifyContent: "center", minHeight: 122, position: "relative" }, welcomeIllustration: { bottom: -8, height: 148, opacity: .5, position: "absolute", resizeMode: "contain", right: -20, width: 148 }, hello: { color: "#65758A", marginTop: 22, zIndex: 1 }, title: { color: "#102B3D", fontSize: 31, fontWeight: "800", zIndex: 1 }, subtitle: { color: "#65758A", fontSize: 16, maxWidth: "72%", zIndex: 1 },
