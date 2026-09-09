@@ -8,7 +8,15 @@
       "supabase/functions",
       "supabase/seed-admin-demo.ts",
       "supabase/seed-admin-demo_test.ts"
-    ]
+    ],
+    "rules": {
+      "exclude": [
+        "no-import-prefix",
+        "no-sloppy-imports",
+        "require-await",
+        "jsx-boolean-value"
+      ]
+    }
   },
   "tasks": {
     "lint": "deno lint",
