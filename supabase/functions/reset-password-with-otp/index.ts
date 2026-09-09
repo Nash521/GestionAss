@@ -21,10 +21,20 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const { data: membership } = await database.from("membership_requests").select("user_id,status,users!inner(is_active)").eq("phone", phone).maybeSingle();
   const account = Array.isArray(membership?.users) ? membership.users[0] : membership?.users;
   if (membership?.status !== "approved" || !account?.is_active) return response({ error: "Invalid or expired code" }, 400);
-  const { data: verified } = await database.rpc("verify_and_consume_otp", { p_phone: phone, p_purpose: "password_reset", p_code_hash: hashToDatabase(await hashOtp(code, otpHashSecret)) });
-  if (verified !== true) return response({ error: "Invalid or expired code" }, 400);
-  const { error } = await database.auth.admin.updateUserById(membership.user_id, { password });
-  if (error) return response({ error: "Service unavailable" }, 503);
+  const { data: reservation } = await database.rpc("reserve_password_reset_otp", { p_phone: phone, p_code_hash: hashToDatabase(await hashOtp(code, otpHashSecret)) });
+  if (typeof reservation !== "string") return response({ error: "Invalid or expired code" }, 400);
+  try {
+    const { error } = await database.auth.admin.updateUserById(membership.user_id, { password });
+    if (error) {
+      await database.rpc("release_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+      return response({ error: "Service unavailable" }, 503);
+    }
+  } catch {
+    await database.rpc("release_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+    return response({ error: "Service unavailable" }, 503);
+  }
+  const { data: finalized } = await database.rpc("finalize_password_reset_otp", { p_phone: phone, p_reservation: reservation });
+  if (finalized !== true) return response({ error: "Service unavailable" }, 503);
   await database.auth.admin.signOut(membership.user_id, "global");
   return response({ reset: true });
 });
