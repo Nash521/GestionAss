@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Alert, Animated, Image, ImageBackground, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, ImageBackground, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminHeader } from "../../src/components/admin-chrome";
 import { DashboardSummary, getAdminDashboard } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
 const flower = require("../../assets/image_fleur.png");
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
-const soon = () => Alert.alert("Bientôt disponible", "Cette fonctionnalité arrive prochainement.");
 
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -66,15 +65,15 @@ export default function AdminDashboard() {
             ))}
           </View>
 
-          <Pressable style={styles.requests} onPress={() => router.push("/(admin)/membership-requests")}> 
+          <Pressable style={styles.requests} onPress={() => router.push("/(admin)/membership-requests")}>
             <Text style={styles.requestsText}>Gérer les demandes d’adhésion</Text>
             <Feather name="arrow-right" size={20} color="#FFF" />
           </Pressable>
 
           <View style={styles.panel}>
-            <View style={[styles.panelHead, { minHeight: 58, position: "relative" }]}> 
+            <View style={[styles.panelHead, { minHeight: 58, position: "relative" }]}>
               <Text style={[styles.panelTitle, { flex: 1, marginRight: 76 }]} numberOfLines={2}>Graphique évolution des cotisations</Text>
-              <View style={[styles.period, { alignItems: "center", flexDirection: "row", gap: 4, position: "absolute", right: 0, top: 0 }]}> 
+              <View style={[styles.period, { alignItems: "center", flexDirection: "row", gap: 4, position: "absolute", right: 0, top: 0 }]}>
                 <Text style={{ color: "#65758A" }} numberOfLines={1}>6 mois</Text>
                 <Feather name="chevron-down" size={14} color="#65758A" />
               </View>
