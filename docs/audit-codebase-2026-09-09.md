@@ -43,3 +43,9 @@ Supabase ne permet pas à une Edge Function de révoquer les refresh tokens d'un
 1. Sécurité de l'inscription et de la réinitialisation.
 2. Qualité, tests et hygiène du dépôt.
 3. Fonctions financières et modules métier manquants.
+
+## Limites restantes après le lot sécurité
+
+- La migration de réservation OTP doit encore être appliquée et testée sur une instance Supabase locale ou de préproduction ; les variables locales nécessaires n'étaient pas disponibles pendant cet audit.
+- Supabase exige le JWT actif de l'utilisateur pour révoquer ses refresh tokens et ne permet pas de révoquer un access token avant son expiration. La réinitialisation ne tente donc plus une déconnexion globale invalide avec un UUID. Une révocation globale fiable nécessite un futur mécanisme de version de session contrôlé par chaque endpoint.
+- Une demande de nouvel OTP après le délai de renvoi peut concurrencer une réinitialisation exceptionnellement longue. Ce cas doit recevoir une conception dédiée avant une garantie de sérialisation complète entre Supabase Auth et PostgreSQL.

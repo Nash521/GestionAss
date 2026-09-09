@@ -4,7 +4,7 @@
 
 **Goal:** Reset an active member password by SMS OTP, then return the member to login.
 
-**Architecture:** Reuse `auth_otps` with purpose `password_reset` and the existing atomic OTP RPCs. Edge Functions hide account existence, update Supabase Auth using service credentials, and invalidate sessions. A three-step Expo page requests the code and password before clearing biometric data and routing to login.
+**Architecture:** Historical plan superseded in part by the 9 September 2026 authentication-security hardening plan. Edge Functions hide account existence and update Supabase Auth using service credentials, but cannot invalidate another user's sessions using only that user's UUID. A three-step Expo page requests the code and password before clearing biometric data and routing to login.
 
 **Tech Stack:** Supabase Edge Functions, Supabase Auth, Expo Router, React Native, Deno, Node test runner.
 
@@ -47,7 +47,6 @@ if (verified.data !== true) return response({ error: "Invalid or expired code" }
 const request = await database.from("membership_requests").select("user_id,status,users!inner(is_active)").eq("phone", phone).maybeSingle();
 if (request.data?.status !== "approved" || !request.data.users.is_active) return response({ error: "Invalid or expired code" }, 400);
 await database.auth.admin.updateUserById(request.data.user_id, { password });
-await database.auth.admin.signOut(request.data.user_id, "global");
 return response({ reset: true });
 ```
 
