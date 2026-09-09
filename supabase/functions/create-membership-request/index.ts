@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isStrongPassword } from "../_shared/password.ts";
 import { verifyRegistrationToken } from "../_shared/registration-token.ts";
 
 const phonePattern = /^\+2250[157]\d{8}$/;
@@ -16,7 +17,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   let firstName: unknown, lastName: unknown, phone: unknown, password: unknown, otpToken: unknown;
   try { ({ firstName, lastName, phone, password, otpToken } = await request.json()); } catch { return response({ error: "Invalid request" }, 400); }
   if (typeof phone !== "string" || !phonePattern.test(phone) || typeof otpToken !== "string") return response({ error: "Unauthorized" }, 401);
-  if (typeof firstName !== "string" || !firstName.trim() || typeof lastName !== "string" || !lastName.trim() || typeof password !== "string" || password.length < 8) return response({ error: "Invalid request" }, 400);
+  if (typeof firstName !== "string" || !firstName.trim() || typeof lastName !== "string" || !lastName.trim() || !isStrongPassword(password)) return response({ error: "Invalid request" }, 400);
   const secret = Deno.env.get("REGISTRATION_TOKEN_SECRET")?.trim();
   if (!secret) return response({ error: "Service unavailable" }, 503);
   const token = await verifyRegistrationToken(otpToken, secret);

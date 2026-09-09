@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hashToDatabase, sha256 } from "../_shared/otp.ts";
+import { isStrongPassword } from "../_shared/password.ts";
 
 const phonePattern = /^\+2250[157]\d{8}$/;
 const codePattern = /^\d{6}$/;
@@ -11,7 +12,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   if (request.method !== "POST") return response({ error: "Method not allowed" }, 405);
   let phone: unknown, code: unknown, password: unknown;
   try { ({ phone, code, password } = await request.json()); } catch { return response({ error: "Invalid request" }, 400); }
-  if (typeof phone !== "string" || typeof code !== "string" || typeof password !== "string" || !phonePattern.test(phone) || !codePattern.test(code) || password.length < 8) return response({ error: "Invalid request" }, 400);
+  if (typeof phone !== "string" || typeof code !== "string" || !phonePattern.test(phone) || !codePattern.test(code) || !isStrongPassword(password)) return response({ error: "Invalid request" }, 400);
   const url = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
