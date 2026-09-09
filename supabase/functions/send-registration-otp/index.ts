@@ -20,6 +20,9 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   if (request.method !== "POST") return response({ error: "Method not allowed" }, 405);
 
+  const otpHashSecret = Deno.env.get("OTP_HASH_SECRET")?.trim();
+  if (!otpHashSecret) return response({ error: "Service unavailable" }, 503);
+
   let phone: unknown;
   let invitationToken: unknown;
   try {
@@ -38,7 +41,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const otp = await createOtp();
+  const otp = await createOtp(otpHashSecret);
   const codeHash = hashToDatabase(otp.codeHash);
   const { data: reserved, error: reserveError } = await database.rpc(
     "issue_registration_otp",

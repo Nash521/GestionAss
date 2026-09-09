@@ -28,7 +28,7 @@ function assertCors(response: Response): void {
 Deno.test("verify-registration-otp rejects requests without invitation evidence", async () => {
   const process = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-net", "--allow-env", functionFile],
-    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret },
+    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret, OTP_HASH_SECRET: "test-otp-hash-secret" },
     stdout: "null",
     stderr: "null",
   }).spawn();
@@ -79,6 +79,7 @@ Deno.test({
       env: {
         PORT: String(port),
         REGISTRATION_TOKEN_SECRET: secret,
+        OTP_HASH_SECRET: "test-otp-hash-secret",
         SUPABASE_URL: localSupabaseUrl!,
         SUPABASE_SERVICE_ROLE_KEY: localServiceRoleKey!,
       },

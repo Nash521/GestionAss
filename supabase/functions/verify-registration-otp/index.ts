@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hashToDatabase, sha256 } from "../_shared/otp.ts";
+import { hashOtp, hashToDatabase } from "../_shared/otp.ts";
 import {
   issueRegistrationToken,
   verifyRegistrationToken,
@@ -33,6 +33,9 @@ Deno.serve(
         error: "Method not allowed",
       }, 405);
     }
+
+    const otpHashSecret = Deno.env.get("OTP_HASH_SECRET")?.trim();
+    if (!otpHashSecret) return response({ error: "Service unavailable" }, 503);
 
     let phone: unknown;
     let code: unknown;
@@ -72,7 +75,7 @@ Deno.serve(
     });
     let codeHash: string;
     try {
-      codeHash = hashToDatabase(await sha256(code));
+      codeHash = hashToDatabase(await hashOtp(code, otpHashSecret));
     } catch {
       return invalidOtp();
     }

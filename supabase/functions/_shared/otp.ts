@@ -15,13 +15,26 @@ function secureSixDigitNumber(): number {
   return bytes[0] % 1_000_000;
 }
 
+/** Generic SHA-256 helper retained for non-OTP uses such as invitation codes. */
 export async function sha256(value: string): Promise<Uint8Array> {
   return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
 }
 
-export async function createOtp(): Promise<Otp> {
+export async function hashOtp(value: string, secret: string): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
+}
+
+export async function createOtp(secret: string): Promise<Otp> {
   const code = secureSixDigitNumber().toString().padStart(6, "0");
-  return { code, codeHash: await sha256(code) };
+  return { code, codeHash: await hashOtp(code, secret) };
 }
 
 /** Constant-time comparison for equally-sized hashes. */
@@ -34,8 +47,8 @@ export function timingSafeEqual(left: Uint8Array, right: Uint8Array): boolean {
   return difference === 0;
 }
 
-export async function safeVerifyOtp(code: string, expectedHash: Uint8Array): Promise<boolean> {
-  return timingSafeEqual(await sha256(code), expectedHash);
+export async function safeVerifyOtp(code: string, expectedHash: Uint8Array, secret: string): Promise<boolean> {
+  return timingSafeEqual(await hashOtp(code, secret), expectedHash);
 }
 
 export function hashToDatabase(hash: Uint8Array): string {

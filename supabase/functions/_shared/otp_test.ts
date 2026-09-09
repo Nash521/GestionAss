@@ -9,13 +9,17 @@ import {
   safeVerifyOtp,
 } from "./otp.ts";
 
-Deno.test("createOtp creates a six-digit code and a SHA-256 hash", async () => {
-  const otp = await createOtp();
+Deno.test("createOtp binds its hash to the supplied server secret", async () => {
+  const secret = "otp-hash-secret";
+  const otp = await createOtp(secret);
 
   if (!/^\d{6}$/.test(otp.code)) throw new Error("expected six digits");
-  if (otp.codeHash.length !== 32) throw new Error("expected SHA-256 hash");
-  if (await safeVerifyOtp("000000", otp.codeHash)) throw new Error("wrong code matched");
-  if (!await safeVerifyOtp(otp.code, otp.codeHash)) throw new Error("correct code did not match");
+  if (otp.codeHash.length !== 32) throw new Error("expected HMAC-SHA-256 hash");
+  if (await safeVerifyOtp("000000", otp.codeHash, secret)) throw new Error("wrong code matched");
+  if (!await safeVerifyOtp(otp.code, otp.codeHash, secret)) throw new Error("correct code did not match");
+  if (await safeVerifyOtp(otp.code, otp.codeHash, "different-otp-hash-secret")) {
+    throw new Error("a different server secret must not verify the OTP");
+  }
 });
 
 Deno.test("OTP timing constants enforce the registration policy", () => {

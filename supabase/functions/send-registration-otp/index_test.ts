@@ -26,7 +26,7 @@ function assertCors(response: Response): void {
 Deno.test("send-registration-otp rejects requests without invitation evidence", async () => {
   const process = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-net", "--allow-env", functionFile],
-    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret },
+    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret, OTP_HASH_SECRET: "test-otp-hash-secret" },
     stdout: "null",
     stderr: "null",
   }).spawn();
@@ -48,7 +48,7 @@ Deno.test("send-registration-otp rejects requests without invitation evidence", 
 Deno.test("send-registration-otp rejects invitation evidence bound to another phone", async () => {
   const process = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-net", "--allow-env", functionFile],
-    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret },
+    env: { PORT: String(port), REGISTRATION_TOKEN_SECRET: secret, OTP_HASH_SECRET: "test-otp-hash-secret" },
     stdout: "null",
     stderr: "null",
   }).spawn();
@@ -91,6 +91,7 @@ Deno.test("send-registration-otp releases a failed SMS reservation so an immedia
       PORT: String(port),
       DENO_ENV: "production",
       REGISTRATION_TOKEN_SECRET: secret,
+      OTP_HASH_SECRET: "test-otp-hash-secret",
       SUPABASE_URL: `http://127.0.0.1:${databasePort}`,
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
       ORANGE_SMS_API_URL: "http://127.0.0.1:1/unavailable",
