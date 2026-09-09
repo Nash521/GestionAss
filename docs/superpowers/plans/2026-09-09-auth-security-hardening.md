@@ -236,7 +236,7 @@ grant execute on function public.release_password_reset_otp(text, uuid) to servi
 
 - [ ] **Step 4: Change reset flow**
 
-Replace `verify_and_consume_otp` with `reserve_password_reset_otp`. On an Auth update failure, call `release_password_reset_otp` and return 503. On success, call `finalize_password_reset_otp`; only after a `true` result call global sign-out and return success.
+Replace `verify_and_consume_otp` with `reserve_password_reset_otp`. On an Auth update failure, call `release_password_reset_otp` and return 503. On success, call `finalize_password_reset_otp`; only after a `true` result return success. Do not call global sign-out with a user UUID: Supabase requires that user's JWT and this reset flow does not possess it.
 
 - [ ] **Step 5: Verify all available checks**
 
