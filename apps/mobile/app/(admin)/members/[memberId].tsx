@@ -31,8 +31,7 @@ export default function MemberDetail() {
       if (requestId !== requestSequence.current) return;
       setError(true);
     } finally {
-      if (requestId !== requestSequence.current) return;
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, [memberId, validMemberId]);
 
@@ -53,7 +52,7 @@ export default function MemberDetail() {
 }
 
 function MemberContent({ detail }: { detail: AdminMemberDetail }) {
-  const { member, membershipFee, monthlyDues, exceptionalDues, aid, summary, chart } = detail;
+  const { membershipFee, monthlyDues, exceptionalDues, aid, summary, chart } = detail;
   return <>
     <IdentityCard detail={detail} />
     <Section title="Droit d’adhésion"><View style={styles.amountGrid}><AmountCard label="Montant dû" value={money(membershipFee.amountDue)} /><AmountCard label="Montant réglé" value={money(membershipFee.amountPaid)} /><AmountCard label="Reste à payer" value={money(membershipFee.amountRemaining)} /></View><StatusPill status={membershipFee.status} /></Section>
