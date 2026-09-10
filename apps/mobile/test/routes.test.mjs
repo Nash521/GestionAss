@@ -400,6 +400,15 @@ test('the login screen prefixes local Ivorian phone numbers before signing in', 
   assert.match(source, /signInWithPhone\(normalizedPhone, password\)/);
 });
 
+test('the splash screen restores a persisted Supabase session before using biometrics', async () => {
+  const source = await readFile(new URL('../app/index.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /getSupabaseClient/);
+  assert.match(source, /auth\.getSession\(\)/);
+  assert.match(source, /session\s*\|\|\s*await unlockWithBiometrics/);
+  assert.match(source, /unlockWithBiometrics/);
+});
+
 test('the Supabase client persists sessions in device storage without storing passwords', async () => {
   const source = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
 
