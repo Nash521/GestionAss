@@ -400,6 +400,15 @@ test('the login screen prefixes local Ivorian phone numbers before signing in', 
   assert.match(source, /signInWithPhone\(normalizedPhone, password\)/);
 });
 
+test('the Supabase client persists sessions in device storage without storing passwords', async () => {
+  const source = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+
+  assert.match(source, /@react-native-async-storage\/async-storage/);
+  assert.match(source, /persistSession:\s*true/);
+  assert.match(source, /storage:/);
+  assert.match(source, /AsyncStorage/);
+});
+
 test('the member list exposes a typed detail client and opens the selected member', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
   const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');

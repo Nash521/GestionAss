@@ -11,6 +11,7 @@
     "@expo/metro-runtime": "~57.0.15",
     "@expo/vector-icons": "^15.0.3",
     "@hookform/resolvers": "^5.5.7",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@supabase/supabase-js": "^2.111.0",
     "expo": "^57.0.21",
