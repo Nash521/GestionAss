@@ -184,7 +184,7 @@ export default function VerifyPhone() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
-  background: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", resizeMode: "cover" },
+  background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", resizeMode: "cover" },
   content: { flexGrow: 1, justifyContent: "space-evenly", paddingHorizontal: 30, paddingVertical: 20 },
   logo: { alignSelf: "center", width: 96, height: 96, resizeMode: "contain" },
   title: { color: "#102B3D", fontSize: 26, fontWeight: "700", textAlign: "center" },

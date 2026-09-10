@@ -91,7 +91,7 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#FFFFFF" }, background: { ...StyleSheet.absoluteFillObject, height: "100%", resizeMode: "cover", width: "100%" },
+  page: { flex: 1, backgroundColor: "#FFFFFF" }, background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, height: "100%", resizeMode: "cover", width: "100%" },
   content: { flex: 1, justifyContent: "center", paddingHorizontal: 22, paddingVertical: 18 }, logo: { alignSelf: "center", height: 86, marginBottom: 4, resizeMode: "contain", width: 86 },
   title: { color: "#102B3D", fontSize: 24, fontWeight: "700", textAlign: "center" }, subtitle: { color: "#748397", fontSize: 13, marginBottom: 9, marginTop: 2, textAlign: "center" },
   field: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 13, elevation: 2, flexDirection: "row", marginBottom: 6, minHeight: 42, paddingHorizontal: 13, shadowColor: "#6D8792", shadowOpacity: 0.09, shadowRadius: 8 },

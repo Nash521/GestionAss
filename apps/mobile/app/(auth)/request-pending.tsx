@@ -44,7 +44,7 @@ export default function RequestPending() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
-  background: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", resizeMode: "cover" },
+  background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", resizeMode: "cover" },
   content: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 26, paddingVertical: 20 },
   logo: { height: 90, marginBottom: 3, resizeMode: "contain", width: 90 },
   illustration: { height: 210, marginBottom: 3, resizeMode: "contain", width: "100%" },
