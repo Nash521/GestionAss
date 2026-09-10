@@ -37,7 +37,7 @@ export default function Login() {
     setError(null);
     try {
       const session = await signInWithPhone(normalizedPhone, password);
-      if (await canEnableBiometricLogin() && !biometricEnabled) Alert.alert("Activer l’empreinte ?", "Utilisez votre empreinte lors de votre prochaine connexion.", [{ text: "Plus tard", style: "cancel" }, { text: "Activer", onPress: () => { void enableBiometricLogin(session).then(() => setBiometricEnabled(true)); } }]);
+      if (await canEnableBiometricLogin() && !biometricEnabled) Alert.alert("Activer l’empreinte ?", "Utilisez votre empreinte lors de votre prochaine connexion.", [{ text: "Plus tard", style: "cancel" }, { text: "Activer", onPress: () => { void (async () => { try { await enableBiometricLogin(session); setBiometricEnabled(true); } catch { setError("Authentification biométrique indisponible. Connectez-vous avec votre mot de passe."); } })(); } }]);
       await routeDestination();
     } catch {
       setError("Numéro ou mot de passe incorrect.");
@@ -48,7 +48,12 @@ export default function Login() {
 
   const unlock = async () => {
     setLoading(true); setError(null);
-    try { if (await unlockWithBiometrics()) await routeDestination(); }
+    try {
+      if (await unlockWithBiometrics()) await routeDestination();
+      else setError("Authentification biométrique indisponible ou session expirée. Connectez-vous avec votre mot de passe.");
+    } catch {
+      setError("Authentification biométrique indisponible. Connectez-vous avec votre mot de passe.");
+    }
     finally { setLoading(false); }
   };
 

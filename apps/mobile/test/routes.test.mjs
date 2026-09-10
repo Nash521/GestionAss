@@ -113,6 +113,7 @@ test('the biometric helper protects a stored session with device authentication'
 
   assert.match(source, /expo-local-authentication/);
   assert.match(source, /expo-secure-store/);
+  assert.match(source, /canUseBiometricAuthentication/);
   assert.match(source, /requireAuthentication: true/);
   assert.match(source, /setSession/);
 });
@@ -123,6 +124,7 @@ test('the login screen offers an enabled biometric unlock', async () => {
   assert.match(source, /Se connecter avec empreinte/);
   assert.match(source, /enableBiometricLogin/);
   assert.match(source, /unlockWithBiometrics/);
+  assert.match(source, /Authentification biométrique indisponible/);
 });
 
 test('the splash screen attempts biometric unlock before showing login', async () => {
