@@ -5,7 +5,10 @@
   "scripts": {
     "dev:mobile": "pnpm --filter mobile start",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "lint": "deno task lint",
+    "test:edge": "deno task test:edge",
+    "quality": "pnpm typecheck && pnpm test && pnpm lint && pnpm test:edge"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

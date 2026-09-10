@@ -40,13 +40,14 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     const { data: created, error: createError } = await database.auth.admin.createUser({ phone: input.phone, password: input.password, phone_confirm: true });
     if (createError) return response({ error: isConflict(createError.message) ? "Ce numéro est déjà associé à un compte." : "Service unavailable" }, isConflict(createError.message) ? 409 : 503);
     if (!created.user) return response({ error: "Service unavailable" }, 503);
+    const createdUserId = created.user.id;
     const compensate = async () => {
       try {
-        const { error } = await database.auth.admin.deleteUser(created.user.id);
+        const { error } = await database.auth.admin.deleteUser(createdUserId);
         if (!error) return true;
       } catch { /* return the same safe operational error below */ }
       try {
-        const { error } = await database.auth.admin.updateUserById(created.user.id, { ban_duration: "876000h" });
+        const { error } = await database.auth.admin.updateUserById(createdUserId, { ban_duration: "876000h" });
         if (!error) {
           logOperationalFailure("Auth account quarantined after failed compensation");
           return false;
@@ -58,7 +59,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     let memberId: unknown, provisionError: { message?: string; code?: string } | null;
     try {
       ({ data: memberId, error: provisionError } = await database.rpc("provision_admin_member", {
-        admin_id: identity.user.id, new_user_id: created.user.id, first_name: input.firstName, last_name: input.lastName,
+        admin_id: identity.user.id, new_user_id: createdUserId, first_name: input.firstName, last_name: input.lastName,
         phone: input.phone, requested_role: input.role,
       }));
     } catch {

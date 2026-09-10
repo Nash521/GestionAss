@@ -1,5 +1,25 @@
 {
+  "lint": {
+    "include": [
+      "apps/mobile/app",
+      "apps/mobile/src",
+      "packages/types/src",
+      "packages/validation/src",
+      "supabase/functions",
+      "supabase/seed-admin-demo.ts",
+      "supabase/seed-admin-demo_test.ts"
+    ],
+    "rules": {
+      "exclude": [
+        "no-import-prefix",
+        "no-sloppy-imports",
+        "require-await",
+        "jsx-boolean-value"
+      ]
+    }
+  },
   "tasks": {
-    "test:edge": "deno test --no-npm --allow-net --allow-env --allow-run supabase/functions"
+    "lint": "deno lint",
+    "test:edge": "deno test --no-npm --allow-all supabase/functions supabase/seed-admin-demo_test.ts"
   }
 }
