@@ -120,13 +120,13 @@ Deno.test({
       const request = (body: Record<string, unknown>) => fetch("http://127.0.0.1:8000", { method: "POST", headers: { authorization: `Bearer ${login.session!.access_token}`, "content-type": "application/json" }, body: JSON.stringify(body) });
       const search = await request({ query: "Koffi" });
       const searchBody = await search.json();
-      if (search.status !== 200 || searchBody.totalMembers !== 2 || searchBody.members.length !== 1 || searchBody.members[0].id !== koffiId || searchBody.members[0].memberStatus !== "active" || searchBody.membersPaid !== 2) throw new Error("search did not isolate, serialize status, or retain organization summary");
+      if (search.status !== 200 || searchBody.totalMembers !== 1 || searchBody.members.length !== 1 || searchBody.members[0].id !== koffiId || searchBody.members[0].memberStatus !== "active" || searchBody.membersPaid !== 0) throw new Error("search did not isolate, serialize status, or retain organization summary");
       const noFee = await request({ query: "SansFrais" });
       const noFeeBody = await noFee.json();
-      if (noFee.status !== 200 || noFeeBody.members.length !== 1 || noFeeBody.members[0].paymentStatus !== "paid" || noFeeBody.totalMembers !== 2 || noFeeBody.membersPaid !== 2) throw new Error("fee-less member did not serialize as current with organization summary");
+      if (noFee.status !== 200 || noFeeBody.members.length !== 1 || noFeeBody.members[0].paymentStatus !== "unpaid" || noFeeBody.totalMembers !== 1 || noFeeBody.membersPaid !== 0) throw new Error("fee-less member was incorrectly counted as a paid member");
       const empty = await request({ offset: 99 });
       const emptyBody = await empty.json();
-      if (empty.status !== 200 || emptyBody.totalMembers !== 2 || emptyBody.members.length !== 0 || emptyBody.membersPaid !== 2 || emptyBody.membersLate !== 0) throw new Error("empty page lost organization summary metadata");
+      if (empty.status !== 200 || emptyBody.totalMembers !== 1 || emptyBody.members.length !== 0 || emptyBody.membersPaid !== 0 || emptyBody.membersLate !== 0) throw new Error("empty page lost organization summary metadata");
     } finally {
       for (const id of createdUsers) await database.auth.admin.deleteUser(id);
       if (adminId) await database.auth.admin.deleteUser(adminId);
