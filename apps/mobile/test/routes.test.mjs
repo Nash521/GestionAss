@@ -462,3 +462,14 @@ test('the member detail route renders contributions, aid, and an accessible nati
   assert.match(source, /Membre introuvable\./);
   assert.match(source, /paddingBottom: 108/);
 });
+
+test('the member administration exposes edit and lifecycle actions', async () => {
+  const source = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
+  const client = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+  assert.match(source, /manageAdminMember/);
+  assert.match(source, /Modifier/);
+  assert.match(source, /Suspendre/);
+  assert.match(source, /Réactiver/);
+  assert.match(source, /Archiver/);
+  assert.match(client, /manageAdminMember/);
+});

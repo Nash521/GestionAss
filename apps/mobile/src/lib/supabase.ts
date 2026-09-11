@@ -89,6 +89,11 @@ export function getAdminMemberDetail(memberId: string) {
   return invokeRegistrationFunction<AdminMemberDetail>("get-admin-member-detail", { memberId });
 }
 
+export type AdminMemberAction = "update" | "suspend" | "reactivate" | "archive";
+export function manageAdminMember(input: { memberId: string; action: AdminMemberAction; firstName?: string; lastName?: string; phone?: string }) {
+  return invokeRegistrationFunction<{ status: AdminMember["memberStatus"] }>("manage-admin-member", input);
+}
+
 export type AdminMembersPage = {
   totalMembers: number;
   membersLate: number;

@@ -1,0 +1,14 @@
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { manageAdminMember } from "../../../src/lib/supabase";
+
+const phonePattern = /^\+2250[157]\d{8}$/;
+export default function EditMember() {
+  const params = useLocalSearchParams<{ memberId?: string; firstName?: string; lastName?: string; phone?: string }>();
+  const [firstName, setFirstName] = useState(params.firstName ?? ""); const [lastName, setLastName] = useState(params.lastName ?? ""); const [phone, setPhone] = useState(params.phone ?? ""); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
+  const submit = async () => { if (!params.memberId || !firstName.trim() || !lastName.trim() || !phonePattern.test(phone)) { setError("Renseignez des informations valides."); return; } setSaving(true); setError(""); try { await manageAdminMember({ memberId: params.memberId, action: "update", firstName: firstName.trim(), lastName: lastName.trim(), phone }); router.back(); } catch { setError("Impossible de modifier ce membre."); } finally { setSaving(false); } };
+  return <View style={styles.page}><Pressable onPress={() => router.back()} accessibilityRole="button"><Text style={styles.back}>‹ Retour</Text></Pressable><Text style={styles.title}>Modifier le membre</Text><Field label="Prénom" value={firstName} onChangeText={setFirstName} /><Field label="Nom" value={lastName} onChangeText={setLastName} /><Field label="Téléphone (+225...)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />{error ? <Text style={styles.error}>{error}</Text> : null}<Pressable disabled={saving} onPress={() => void submit()} style={styles.submit} accessibilityRole="button"><Text style={styles.submitText}>{saving ? "Enregistrement…" : "Enregistrer"}</Text></Pressable></View>;
+}
+function Field({ label, value, onChangeText, keyboardType }: { label: string; value: string; onChangeText: (value: string) => void; keyboardType?: "phone-pad" }) { return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput value={value} onChangeText={onChangeText} style={styles.input} keyboardType={keyboardType} accessibilityLabel={label} /></View>; }
+const styles = StyleSheet.create({ page: { backgroundColor: "#F7FBFA", flex: 1, gap: 14, padding: 22, paddingTop: 34 }, back: { color: "#007D74", fontWeight: "700" }, title: { color: "#102B3D", fontSize: 27, fontWeight: "800", marginBottom: 12 }, field: { gap: 5 }, label: { color: "#102B3D", fontWeight: "700" }, input: { backgroundColor: "#FFF", borderColor: "#DDE6E8", borderRadius: 12, borderWidth: 1, color: "#102B3D", minHeight: 48, padding: 12 }, error: { color: "#C75042", textAlign: "center" }, submit: { alignItems: "center", backgroundColor: "#00A99D", borderRadius: 14, justifyContent: "center", minHeight: 52 }, submitText: { color: "#FFF", fontWeight: "800" } });
