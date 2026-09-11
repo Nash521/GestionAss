@@ -94,6 +94,9 @@ export function manageAdminMember(input: { memberId: string; action: AdminMember
   return invokeRegistrationFunction<{ status: AdminMember["memberStatus"] }>("manage-admin-member", input);
 }
 
+export type OpenDue = { id: string; kind: "membership" | "monthly" | "exceptional"; label: string; dueDate: string | null; amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus };
+export function getMemberOpenDues(memberId: string) { return invokeRegistrationFunction<{ dues: OpenDue[] }>("get-member-open-dues", { memberId }); }
+
 export type AdminMembersPage = {
   totalMembers: number;
   membersLate: number;

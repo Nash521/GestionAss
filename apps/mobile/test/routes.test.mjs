@@ -473,3 +473,12 @@ test('the member administration exposes edit and lifecycle actions', async () =>
   assert.match(source, /Archiver/);
   assert.match(client, /manageAdminMember/);
 });
+
+test('the manual payment form selects a member and loads open dues', async () => {
+  const source = await readFile(new URL('../app/(admin)/finances/new.tsx', import.meta.url), 'utf8');
+  const client = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+  assert.match(source, /getMemberOpenDues/);
+  assert.match(source, /Sélectionner un membre/);
+  assert.match(source, /amountRemaining/);
+  assert.match(client, /getMemberOpenDues/);
+});
