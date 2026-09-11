@@ -89,6 +89,18 @@ test("finance forms expose contextual fields and settings route", () => {
   assert.match(fs.readFileSync(new URL("../app/(admin)/settings/finance.tsx", import.meta.url), "utf8"), /dueDay/);
 });
 
+test("payment form supports every due kind and does not force monthly payments", () => {
+  const form = fs.readFileSync(new URL("../app/(admin)/finances/new.tsx", import.meta.url), "utf8");
+  assert.match(form, /type PaymentKind = "membership" \| "monthly" \| "exceptional"/);
+  assert.match(form, /kind: paymentKind/);
+  assert.match(form, /Adhésion/);
+  assert.match(form, /Mensualité/);
+  assert.match(form, /Exceptionnelle/);
+  assert.doesNotMatch(form, /kind:\s*"monthly"\s+as const/);
+  assert.match(form, /kind === "payment" && !dueId\.trim\(\)/);
+  assert.match(form, /\(kind === "exceptional" \|\| kind === "disbursement"\) && !label\.trim\(\)/);
+});
+
 test("finance settings loads existing values before enabling save", () => {
   const client = fs.readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8");
   const action = fs.readFileSync(new URL("../../../supabase/functions/create-admin-finance-action/index.ts", import.meta.url), "utf8");

@@ -75,7 +75,7 @@ export default function NewAdminMember() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
-  background: { ...StyleSheet.absoluteFillObject, height: "100%", resizeMode: "cover", width: "100%" },
+  background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, height: "100%", resizeMode: "cover", width: "100%" },
   content: { flexGrow: 1, paddingBottom: 32, paddingHorizontal: 22, paddingTop: 26 },
   backButton: { alignItems: "center", backgroundColor: "rgba(255,255,255,.92)", borderRadius: 20, height: 40, justifyContent: "center", width: 40 },
   logo: { alignSelf: "center", height: 82, marginTop: -20, resizeMode: "contain", width: 82 },

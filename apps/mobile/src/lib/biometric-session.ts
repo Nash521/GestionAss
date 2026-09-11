@@ -8,21 +8,33 @@ const ENABLED_KEY = "gestionass.biometric.enabled";
 type StoredSession = { accessToken: string; refreshToken: string };
 
 export async function canEnableBiometricLogin() {
-  return (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+  return (await SecureStore.canUseBiometricAuthentication()) &&
+    (await LocalAuthentication.hasHardwareAsync()) &&
+    (await LocalAuthentication.isEnrolledAsync());
 }
 
 export async function isBiometricLoginEnabled() {
-  return (await SecureStore.getItemAsync(ENABLED_KEY)) === "true";
+  return (await SecureStore.getItemAsync(ENABLED_KEY)) === "true" &&
+    await canEnableBiometricLogin();
 }
 
 export async function enableBiometricLogin(session: Session) {
-  await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify({ accessToken: session.access_token, refreshToken: session.refresh_token }), { requireAuthentication: true });
+  if (!await canEnableBiometricLogin()) {
+    throw new Error("Authentification biométrique indisponible.");
+  }
+  await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify({ accessToken: session.access_token, refreshToken: session.refresh_token }), {
+    requireAuthentication: true,
+    authenticationPrompt: "Confirmez votre identité pour protéger votre session GestionAss.",
+  });
   await SecureStore.setItemAsync(ENABLED_KEY, "true");
 }
 
 export async function unlockWithBiometrics() {
   try {
-    const serialized = await SecureStore.getItemAsync(SESSION_KEY, { requireAuthentication: true });
+    const serialized = await SecureStore.getItemAsync(SESSION_KEY, {
+      requireAuthentication: true,
+      authenticationPrompt: "Confirmez votre identité pour vous connecter à GestionAss.",
+    });
     if (!serialized) return false;
     const { accessToken, refreshToken } = JSON.parse(serialized) as StoredSession;
     const { error } = await getSupabaseClient().auth.setSession({ access_token: accessToken, refresh_token: refreshToken });

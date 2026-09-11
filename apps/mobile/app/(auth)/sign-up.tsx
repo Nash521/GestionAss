@@ -87,7 +87,7 @@ export default function SignUp() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
-  background: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", resizeMode: "cover" },
+  background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", resizeMode: "cover" },
   content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 18, justifyContent: "center" },
   logo: { alignSelf: "center", width: 86, height: 86, marginBottom: 4, resizeMode: "contain" },
   title: { color: "#102B3D", fontSize: 24, fontWeight: "700", textAlign: "center" },

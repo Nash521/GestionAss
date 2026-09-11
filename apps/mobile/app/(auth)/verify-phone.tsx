@@ -4,11 +4,18 @@ import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeScreen } from "../../src/components/keyboard-safe-screen";
 import { registrationFlow } from "../../src/features/auth/registration-flow";
-import { invokeRegistrationFunction } from "../../src/lib/supabase";
+import { getFunctionErrorMessage, invokeRegistrationFunction } from "../../src/lib/supabase";
 
 const background = require("../../assets/fond_effetvague.png");
 const logo = require("../../assets/logo-removebg-preview.png");
-const RESEND_DELAY_SECONDS = 45;
+const RESEND_DELAY_SECONDS = 5 * 60;
+const OTP_VALIDITY_MINUTES = 10;
+
+const formatCountdown = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+};
 
 export default function VerifyPhone() {
   const [code, setCode] = useState("");
@@ -22,11 +29,9 @@ export default function VerifyPhone() {
 
   useEffect(() => {
     if (remainingSeconds === 0) return;
-
     const timer = setTimeout(() => {
       setRemainingSeconds((current) => Math.max(current - 1, 0));
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [remainingSeconds]);
 
@@ -46,7 +51,6 @@ export default function VerifyPhone() {
 
     setVerifying(true);
     setError(null);
-
     try {
       const verified = await invokeRegistrationFunction<{ otpToken: string }>("verify-registration-otp", {
         phone: draft.phone,
@@ -77,7 +81,6 @@ export default function VerifyPhone() {
 
     setResending(true);
     setError(null);
-
     try {
       await invokeRegistrationFunction("send-registration-otp", {
         phone: draft.phone,
@@ -86,14 +89,20 @@ export default function VerifyPhone() {
       setRemainingSeconds(RESEND_DELAY_SECONDS);
       setCode("");
       inputRef.current?.focus();
-    } catch {
-      setError("Impossible de renvoyer le code. Réessayez plus tard.");
+    } catch (resendError) {
+      const message = await getFunctionErrorMessage(resendError);
+      if (message?.toLowerCase().includes("wait")) {
+        setRemainingSeconds(RESEND_DELAY_SECONDS);
+        setError("Un nouveau code ne peut être demandé que toutes les 5 minutes.");
+      } else {
+        setError("Impossible de renvoyer le code. Réessayez plus tard.");
+      }
     } finally {
       setResending(false);
     }
   };
 
-  const countdown = `00:${String(remainingSeconds).padStart(2, "0")}`;
+  const countdown = formatCountdown(remainingSeconds);
   const canResend = remainingSeconds === 0 && !resending;
 
   return (
@@ -137,8 +146,8 @@ export default function VerifyPhone() {
             accessibilityLabel="Code de vérification à six chiffres"
           />
 
-          <Text style={styles.validity}>Le code est valide pendant 5 minutes.</Text>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Text style={styles.validity}>Le code est valide pendant {OTP_VALIDITY_MINUTES} minutes.</Text>
+          {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
 
           <Pressable
             style={[styles.verifyButton, verifying && styles.buttonDisabled]}
@@ -175,7 +184,7 @@ export default function VerifyPhone() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#FFFFFF" },
-  background: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%", resizeMode: "cover" },
+  background: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, width: "100%", height: "100%", resizeMode: "cover" },
   content: { flexGrow: 1, justifyContent: "space-evenly", paddingHorizontal: 30, paddingVertical: 20 },
   logo: { alignSelf: "center", width: 96, height: 96, resizeMode: "contain" },
   title: { color: "#102B3D", fontSize: 26, fontWeight: "700", textAlign: "center" },

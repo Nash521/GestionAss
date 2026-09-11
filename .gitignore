@@ -1,6 +1,8 @@
 node_modules/
 .pnpm-store/
 .turbo/
+supabase/.temp/
+expo-sdk57-qr.png
 .expo/
 .env
 .env.*
