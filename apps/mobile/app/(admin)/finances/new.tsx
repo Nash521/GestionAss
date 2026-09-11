@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { createAdminFinanceAction, getFunctionErrorMessage } from "../../../src/lib/supabase";
+import { AdminMember, createAdminFinanceAction, getAdminMembers, getFunctionErrorMessage, getMemberOpenDues, OpenDue } from "../../../src/lib/supabase";
 
 type Kind = "monthly" | "exceptional" | "payment" | "disbursement";
 type PaymentKind = "membership" | "monthly" | "exceptional";
@@ -21,12 +21,16 @@ export default function NewFinance() {
   const [date, setDate] = useState(today);
   const [targets, setTargets] = useState("");
   const [dueId, setDueId] = useState("");
+  const [members, setMembers] = useState<AdminMember[]>([]);
+  const [openDues, setOpenDues] = useState<OpenDue[]>([]);
   const [reference, setReference] = useState("");
   const [memberId, setMemberId] = useState("");
   const [contributionId, setContributionId] = useState("");
   const [justification, setJustification] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  useEffect(() => { if (kind === "payment") void getAdminMembers({ memberStatus: "active", limit: 50 }).then((result) => setMembers(result.members)).catch(() => setError("Impossible de charger les membres.")); }, [kind]);
+  useEffect(() => { if (kind !== "payment" || !memberId) { setOpenDues([]); return; } void getMemberOpenDues(memberId).then(({ dues }) => setOpenDues(dues)).catch(() => setError("Impossible de charger les cotisations ouvertes.")); }, [kind, memberId]);
 
   const submit = async () => {
     if (!isValidDate(date)) {
@@ -43,10 +47,15 @@ export default function NewFinance() {
       setError("Le libellé est obligatoire.");
       return;
     }
+    if (kind === "payment" && !memberId) {
+      setError("Sélectionnez un membre.");
+      return;
+    }
     if (kind === "payment" && !dueId.trim()) {
       setError("La référence de la cotisation à régler est obligatoire.");
       return;
     }
+    if (kind === "payment" && numeric > Number(openDues.find((due) => due.id === dueId)?.amountRemaining ?? 0)) { setError("Le montant dépasse le reste à payer."); return; }
     if (kind === "disbursement" && (!justification.trim() || (memberId.trim() && contributionId.trim()))) {
       setError("Justification obligatoire ; choisissez au maximum une cible.");
       return;
@@ -95,12 +104,6 @@ export default function NewFinance() {
     }
   };
 
-  const paymentDueLabel = paymentKind === "membership"
-    ? "ID du droit d’adhésion"
-    : paymentKind === "exceptional"
-      ? "ID de la cotisation exceptionnelle"
-      : "ID de la mensualité";
-
   return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
     <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Retour">
       <Feather name="arrow-left" size={23} color="#102B3D" />
@@ -147,7 +150,7 @@ export default function NewFinance() {
           ))}
         </View>
       </View>
-      <Field label={paymentDueLabel} value={dueId} onChangeText={setDueId} placeholder="Identifiant de la cotisation" />
+      <Text style={styles.label}>Sélectionner un membre</Text><View style={styles.choices}>{members.map((member) => <Pressable key={member.id} onPress={() => { setMemberId(member.id); setDueId(""); }} style={[styles.choice, memberId === member.id && styles.active]} accessibilityRole="button" accessibilityState={{ selected: memberId === member.id }}><Text>{member.firstName} {member.lastName}</Text></Pressable>)}</View><Text style={styles.label}>Cotisation ouverte</Text><View style={styles.choices}>{openDues.map((due) => <Pressable key={due.id} onPress={() => { setDueId(due.id); setPaymentKind(due.kind); setAmount(String(due.amountRemaining)); }} style={[styles.choice, dueId === due.id && styles.active]} accessibilityRole="button" accessibilityState={{ selected: dueId === due.id }}><Text>{due.label} — reste {due.amountRemaining} XOF</Text></Pressable>)}</View>
     </>}
 
     {kind !== "monthly" && (

@@ -48,7 +48,7 @@ export async function getSessionDestination() {
   return invokeRegistrationFunction<{ destination: SessionDestination; role?: AccountRole }>("get-session-destination", {});
 }
 
-export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalDue: number; totalCollected: number; totalOutstanding: number };
+export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalMonthlyOutstanding: number; totalCash: number; totalExpenses: number };
 export function getAdminDashboard() { return invokeRegistrationFunction<DashboardSummary>("get-admin-dashboard", {}); }
 
 export type AdminMember = {
@@ -93,6 +93,9 @@ export type AdminMemberAction = "update" | "suspend" | "reactivate" | "archive";
 export function manageAdminMember(input: { memberId: string; action: AdminMemberAction; firstName?: string; lastName?: string; phone?: string }) {
   return invokeRegistrationFunction<{ status: AdminMember["memberStatus"] }>("manage-admin-member", input);
 }
+
+export type OpenDue = { id: string; kind: "membership" | "monthly" | "exceptional"; label: string; dueDate: string | null; amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus };
+export function getMemberOpenDues(memberId: string) { return invokeRegistrationFunction<{ dues: OpenDue[] }>("get-member-open-dues", { memberId }); }
 
 export type AdminMembersPage = {
   totalMembers: number;
