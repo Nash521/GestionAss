@@ -276,13 +276,11 @@ test('the admin dashboard uses protected statistics with labels that match membe
   assert.match(source, /getAdminDashboard/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /image_fleur\.png/);
-  assert.match(source, /Droits d’adhésion réglés/);
-  assert.match(source, /Droits d’adhésion à régulariser/);
-  assert.match(source, /Droits d’adhésion dus/);
-  assert.match(source, /Droits d’adhésion encaissés/);
-  assert.match(source, /Reste sur droits d’adhésion/);
-  assert.doesNotMatch(source, /Total cotisation mensuelle/);
-  assert.doesNotMatch(source, /Total couverture ou dépense/);
+  assert.match(source, /Total à jour/);
+  assert.match(source, /Total en retard/);
+  assert.match(source, /Total mensualités impayées/);
+  assert.match(source, /Total caisse/);
+  assert.match(source, /Total dépense/);
   assert.match(source, /Graphique évolution des cotisations/);
   assert.match(source, /Dernières transactions/);
   assert.match(source, /membership-requests/);
@@ -301,9 +299,9 @@ test('the dashboard background scrolls with its content and renders membership-f
   assert.match(source, /<ScrollView/);
   assert.match(source, /<ImageBackground/);
   assert.match(source, /card:\s*\{[^}]*width:\s*"48%"/);
-  assert.match(source, /money\(data\.totalDue\)/);
-  assert.match(source, /money\(data\.totalCollected\)/);
-  assert.match(source, /money\(data\.totalOutstanding\)/);
+  assert.match(source, /money\(data\.totalMonthlyOutstanding\)/);
+  assert.match(source, /money\(data\.totalCash\)/);
+  assert.match(source, /money\(data\.totalExpenses\)/);
 });
 
 test('the admin dashboard composes shared animated chrome with literal section routes', async () => {

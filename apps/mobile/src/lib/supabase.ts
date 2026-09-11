@@ -48,7 +48,7 @@ export async function getSessionDestination() {
   return invokeRegistrationFunction<{ destination: SessionDestination; role?: AccountRole }>("get-session-destination", {});
 }
 
-export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalDue: number; totalCollected: number; totalOutstanding: number };
+export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalMonthlyOutstanding: number; totalCash: number; totalExpenses: number };
 export function getAdminDashboard() { return invokeRegistrationFunction<DashboardSummary>("get-admin-dashboard", {}); }
 
 export type AdminMember = {
