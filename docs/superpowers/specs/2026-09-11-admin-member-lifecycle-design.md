@@ -17,7 +17,7 @@ Permettre à un administrateur de modifier une fiche membre, suspendre temporair
 
 ## Architecture
 
-Le backend expose une Edge Function dédiée, `manage-admin-member`, qui authentifie le JWT, vérifie l’administrateur actif, valide l’action et appelle une fonction SQL `manage_admin_member`. La fonction SQL effectue la transition atomique, applique les contraintes d’organisation et écrit une entrée d’audit dans une table dédiée.
+Le backend expose une Edge Function dédiée, `manage-admin-member`, qui authentifie le JWT, vérifie l’administrateur actif, valide l’action et appelle une fonction SQL `manage_admin_member`. La fonction SQL effectue la transition atomique et applique les contraintes d’organisation.
 
 L’application mobile ajoute une action d’édition sur la fiche membre et des actions contextuelles selon le statut : suspendre, réactiver ou archiver. Chaque action demande une confirmation explicite, affiche une erreur métier sûre et recharge la fiche après succès.
 
@@ -30,9 +30,9 @@ L’application mobile ajoute une action d’édition sur la fiche membre et des
 5. PostgreSQL vérifie l’organisation, la transition de statut et la règle du dernier administrateur, puis met à jour la fiche et crée l’audit dans une transaction.
 6. L’application recharge la fiche et affiche le nouveau statut.
 
-## Audit et erreurs
+## Qualité de code et expérience utilisateur
 
-La table d’audit conserve : membre ciblé, administrateur, organisation, action, ancien statut, nouveau statut, date et métadonnées minimales. Les réponses publiques ne révèlent jamais les erreurs SQL ou les détails d’identité ; elles utilisent des messages métier (`Membre introuvable`, `Action non autorisée`, `Numéro déjà utilisé`, `Service indisponible`).
+Le code reste typé, modulaire et aligné sur les conventions existantes. Les composants mobiles exposent des libellés accessibles, des boutons désactivés pendant l’enregistrement, des confirmations avant les actions irréversibles et des messages de succès ou d’erreur compréhensibles. Les réponses publiques ne révèlent jamais les erreurs SQL ou les détails d’identité ; elles utilisent des messages métier (`Membre introuvable`, `Action non autorisée`, `Numéro déjà utilisé`, `Service indisponible`).
 
 ## Tests
 
@@ -45,4 +45,4 @@ La table d’audit conserve : membre ciblé, administrateur, organisation, actio
 - Suppression physique des données.
 - Gestion des événements et notifications.
 - Modification des montants financiers depuis la fiche membre.
-- Historique détaillé affiché dans l’application (la table d’audit le prépare pour une évolution ultérieure).
+- Historique détaillé des changements affiché dans l’application.
