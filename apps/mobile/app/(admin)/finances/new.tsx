@@ -104,12 +104,6 @@ export default function NewFinance() {
     }
   };
 
-  const paymentDueLabel = paymentKind === "membership"
-    ? "ID du droit d’adhésion"
-    : paymentKind === "exceptional"
-      ? "ID de la cotisation exceptionnelle"
-      : "ID de la mensualité";
-
   return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
     <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Retour">
       <Feather name="arrow-left" size={23} color="#102B3D" />
