@@ -478,6 +478,28 @@ test('the member administration keeps edits and manual reactivation but no direc
   assert.match(client, /manageAdminMember/);
 });
 
+test('disciplinary route lists cases, opens investigations, and decides only open cases', async () => {
+  const source = await readFile(new URL('../app/(admin)/members/[memberId]/disciplinary.tsx', import.meta.url), 'utf8');
+  const detail = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
+  assert.match(source, /useLocalSearchParams/);
+  assert.match(source, /getAdminMemberDetail/);
+  assert.match(source, /listDisciplinaryCases/);
+  assert.match(source, /openDisciplinaryCase/);
+  assert.match(source, /decideDisciplinaryCase/);
+  assert.match(source, /item\.status === "open"/);
+  assert.match(source, /member\.memberStatus === "active"/);
+  assert.match(source, /contributionPolicy/);
+  assert.match(source, /continue/);
+  assert.match(source, /stop/);
+  assert.match(source, /durationDays/);
+  assert.match(source, /Réactivation ultérieure manuelle/);
+  assert.match(source, /saving/);
+  assert.match(source, /getFunctionErrorMessage/);
+  assert.match(source, /Réessayer/);
+  assert.match(detail, /Dossiers disciplinaires/);
+  assert.match(detail, /members\/\[memberId\]\/disciplinary/);
+});
+
 test('the manual payment form selects a member and loads open dues', async () => {
   const source = await readFile(new URL('../app/(admin)/finances/new.tsx', import.meta.url), 'utf8');
   const client = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
