@@ -80,6 +80,12 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.doesNotMatch(page, /horizontal/);
 });
 
+test("finance overview never renders items loaded for a different selected tab", () => {
+  const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
+  assert.match(page, /loadedTab/);
+  assert.match(page, /loadedTab\s*!==\s*tab/);
+});
+
 test("finance migration returns monthly member identity for reminders", () => {
   const sql = fs.readFileSync(new URL("../../../supabase/migrations/202608200001_finance_management.sql", import.meta.url), "utf8");
   assert.match(sql, /'firstName',first_name/);

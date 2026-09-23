@@ -17,6 +17,7 @@ const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "curren
 
 export default function AdminFinances() {
   const [tab, setTab] = useState<FinanceTab>("monthly");
+  const [loadedTab, setLoadedTab] = useState<FinanceTab | null>(null);
   const [data, setData] = useState<AdminFinance | null>(null);
   const [items, setItems] = useState<Array<MonthlyDue | ExceptionalContribution | Disbursement>>([]);
   const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false); const [error, setError] = useState(false);
@@ -27,7 +28,7 @@ export default function AdminFinances() {
     try {
       const result = await getAdminFinance(tab, offset, PAGE_SIZE);
       if (requestId !== requestSequence.current) return;
-      setData(result); setItems((current) => offset === 0 ? [...result.items] : [...current, ...result.items]);
+      setData(result); setLoadedTab(tab); setItems((current) => offset === 0 ? [...result.items] : [...current, ...result.items]);
     } catch { if (requestId === requestSequence.current) setError(true); }
     finally { if (requestId === requestSequence.current) { setLoading(false); setLoadingMore(false); } }
   }, [tab]);
@@ -38,7 +39,7 @@ export default function AdminFinances() {
     <Text style={styles.kicker}>Gestion de l’association</Text><Text style={styles.title}>Finances</Text><Text style={styles.subtitle}>Suivez les cotisations et les sorties de trésorerie.</Text>
     <View style={styles.tabs}>{tabs.map((entry) => { const active = tab === entry.key; return <Pressable key={entry.key} onPress={() => setTab(entry.key)} style={[styles.tab, active && styles.activeTab]}><Feather name={entry.icon} size={17} color={active ? "#FFF" : "#102B3D"} /><Text style={[styles.tabText, active && styles.activeTabText]}>{entry.key === "exceptional" ? <>Cotisations{"\n"}exceptionnelles</> : entry.label}</Text></Pressable>; })}</View>
     <Pressable style={styles.primary} onPress={primary}><Feather name="plus" size={19} color="#FFF" /><Text style={styles.primaryText}>{primaryLabel}</Text></Pressable>
-    {loading ? <Text style={styles.message}>Chargement des finances…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les finances.</Text><Pressable onPress={() => void load()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : <>
+    {loading || (!error && loadedTab !== tab) ? <Text style={styles.message}>Chargement des finances…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les finances.</Text><Pressable onPress={() => void load()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : <>
       <Summary tab={tab} summary={data?.summary ?? {}} />
       {items.length === 0 ? <Text style={styles.message}>Aucune opération pour le moment.</Text> : <View style={styles.list}>{items.map((item, index) => <FinanceCard key={(item as { id?: string }).id ?? index} tab={tab} item={item} />)}{data && items.length < data.metadata.total ? <Pressable style={styles.more} disabled={loadingMore} onPress={() => void load(items.length)}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus"}</Text></Pressable> : null}</View>}
     </>}
