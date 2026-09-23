@@ -332,6 +332,7 @@ test('the admin layout owns persistent navigation and defers member creation to 
 test('the member page provides administration, filters, and an entry point to account creation', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
   const newMember = await readFile(new URL('../app/(admin)/members/new.tsx', import.meta.url), 'utf8');
+  const api = await readFile(new URL('../src/features/members/api.ts', import.meta.url), 'utf8');
   const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
 
   assert.match(source, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
@@ -355,9 +356,9 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(source, /useEffect\(\(\) => \{ requestSequence\.current\+\+; setMembers\(\[\]\);/, 'filter changes invalidate in-flight member requests before debounce');
   assert.match(source, /useFocusEffect\(/);
   assert.match(source, /requestSequence\.current\+\+;[\s\S]*void loadMembers\(0\)/, 'focus refresh invalidates stale member requests before loading');
-  assert.match(supabase, /offset\??:\s*number/);
-  assert.match(supabase, /offset: filters\.offset \?\? 0/);
-  assert.match(supabase, /limit: filters\.limit \?\? 50/);
+  assert.match(api, /offset\??:\s*number/);
+  assert.match(api, /offset: filters\.offset \?\? 0/);
+  assert.match(api, /limit: filters\.limit \?\? 50/);
   assert.match(source, /Voir plus/);
   assert.match(source, /label: "En attente"/);
   assert.match(source, /label: "Suspendu"/);
@@ -376,12 +377,13 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(newMember, /accessibilityRole="button"/);
   assert.match(newMember, /accessibilityState=\{\{ selected: role === value \}\}/);
   assert.match(newMember, /accessibilityLiveRegion="polite"/);
-  assert.match(supabase, /export type AdminMember/);
-  assert.match(supabase, /export type AdminMembersPage/);
-  assert.match(supabase, /"get-admin-members"/);
-  assert.match(supabase, /"create-admin-member"/);
-  assert.match(supabase, /export async function getFunctionErrorMessage/);
-  assert.match(supabase, /response\.clone\(\)\.json\(\)/);
+  assert.match(api, /export type AdminMember/);
+  assert.match(api, /export type AdminMembersPage/);
+  assert.match(api, /"get-admin-members"/);
+  assert.match(api, /"create-admin-member"/);
+  assert.match(supabase, /export \* from "\.\.\/features\/members\/api"/);
+  assert.match(supabase, /getFunctionErrorMessage/);
+  assert.match(supabase, /supabase-client/);
 });
 
 test('the member filters wrap into visible rows on narrow screens', async () => {
@@ -408,7 +410,7 @@ test('the splash screen restores a persisted Supabase session before using biome
 });
 
 test('the Supabase client persists sessions in device storage without storing passwords', async () => {
-  const source = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/lib/supabase-client.ts', import.meta.url), 'utf8');
 
   assert.match(source, /@react-native-async-storage\/async-storage/);
   assert.match(source, /persistSession:\s*true/);
@@ -419,13 +421,16 @@ test('the Supabase client persists sessions in device storage without storing pa
 test('the member list exposes a typed detail client and opens the selected member', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
   const supabase = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+  const api = await readFile(new URL('../src/features/members/api.ts', import.meta.url), 'utf8');
 
-  assert.match(supabase, /export type ContributionDue/);
-  assert.match(supabase, /export type AidDisbursement/);
-  assert.match(supabase, /export type MemberChartPoint/);
-  assert.match(supabase, /export type AdminMemberDetail/);
-  assert.match(supabase, /export function getAdminMemberDetail\(memberId: string\)/);
-  assert.match(supabase, /invokeRegistrationFunction<AdminMemberDetail>\("get-admin-member-detail", \{ memberId \}\)/);
+  assert.match(api, /export type ContributionDue/);
+  assert.match(api, /export type AidDisbursement/);
+  assert.match(api, /export type MemberChartPoint/);
+  assert.match(api, /export type AdminMemberDetail/);
+  assert.match(api, /export function getAdminMemberDetail\(memberId: string\)/);
+  assert.match(api, /invokeRegistrationFunction<AdminMemberDetail>\("get-admin-member-detail", \{ memberId \}\)/);
+  assert.match(supabase, /export \* from "\.\.\/features\/members\/api"/);
+  assert.match(source, /from "\.\.\/\.\.\/src\/features\/members\/api"/);
   assert.match(source, /<Pressable[^>]*accessibilityRole="button"/);
   assert.match(source, /accessibilityLabel=\{`Voir \$\{member\.firstName\} \$\{member\.lastName\}`\}/);
   assert.match(source, /router\.push\(\{ pathname: "\/\(admin\)\/members\/\[memberId\]", params: \{ memberId: member\.id \} \}\)/);
@@ -461,14 +466,15 @@ test('the member detail route renders contributions, aid, and an accessible nati
   assert.match(source, /paddingBottom: 108/);
 });
 
-test('the member administration exposes edit and lifecycle actions', async () => {
+test('the member administration keeps edits and manual reactivation but no direct sanctions', async () => {
   const source = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
-  const client = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+  const client = await readFile(new URL('../src/features/members/api.ts', import.meta.url), 'utf8');
   assert.match(source, /manageAdminMember/);
   assert.match(source, /Modifier/);
-  assert.match(source, /Suspendre/);
   assert.match(source, /Réactiver/);
-  assert.match(source, /Archiver/);
+  assert.doesNotMatch(source, /Suspendre|Archiver/);
+  assert.doesNotMatch(source, /action:\s*"(?:suspend|archive)"/);
+  assert.match(client, /AdminMemberAction\s*=\s*"update"\s*\|\s*"reactivate"/);
   assert.match(client, /manageAdminMember/);
 });
 

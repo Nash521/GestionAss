@@ -3,7 +3,8 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeScreen } from "../../../src/components/keyboard-safe-screen";
-import { createAdminMember, getFunctionErrorMessage } from "../../../src/lib/supabase";
+import { createAdminMember } from "../../../src/features/members/api";
+import { getFunctionErrorMessage } from "../../../src/lib/supabase";
 
 const background = require("../../../assets/Fond_ecranMobile.png");
 const logo = require("../../../assets/logo-removebg-preview.png");

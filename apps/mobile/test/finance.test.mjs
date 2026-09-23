@@ -9,7 +9,17 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
 const finance = new Module("supabase-finance-test");
 finance.filename = new URL("../src/lib/supabase.ts", import.meta.url).pathname;
 finance.paths = Module._nodeModulePaths(process.cwd());
-finance._compile(compiled, finance.filename);
+const originalLoad = Module._load;
+Module._load = function (request, parent, isMain) {
+  if (request === "./supabase-client") return { invokeRegistrationFunction: async () => ({}), getSupabaseClient: () => ({}), getFunctionErrorMessage: async () => null };
+  if (request === "../features/members/api") return {};
+  return originalLoad.call(this, request, parent, isMain);
+};
+try {
+  finance._compile(compiled, finance.filename);
+} finally {
+  Module._load = originalLoad;
+}
 
 test("finance client exposes complete domain types", () => {
   for (const name of ["AdminFinance", "FinanceTab", "MonthlyDue", "ExceptionalContribution", "Disbursement", "FinanceMember", "AdminFinanceAction"]) {

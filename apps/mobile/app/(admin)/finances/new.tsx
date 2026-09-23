@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { AdminMember, createAdminFinanceAction, getAdminMembers, getFunctionErrorMessage, getMemberOpenDues, OpenDue } from "../../../src/lib/supabase";
+import { AdminMember, getAdminMembers } from "../../../src/features/members/api";
+import { createAdminFinanceAction, getFunctionErrorMessage, getMemberOpenDues, OpenDue } from "../../../src/lib/supabase";
 
 type Kind = "monthly" | "exceptional" | "payment" | "disbursement";
 type PaymentKind = "membership" | "monthly" | "exceptional";
