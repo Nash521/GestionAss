@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Linking, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminHeader } from "../../src/components/admin-chrome";
+import { formatFinanceDate } from "../../src/lib/date-format";
 import { AdminFinance, Disbursement, ExceptionalContribution, FinanceTab, MonthlyDue, getAdminFinance } from "../../src/lib/supabase";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -13,7 +14,6 @@ const tabs: Array<{ key: FinanceTab; label: string; icon: "calendar" | "gift" | 
   { key: "disbursements", label: "Décaissements", icon: "external-link" },
 ];
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
-const date = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(value));
 
 export default function AdminFinances() {
   const [tab, setTab] = useState<FinanceTab>("monthly");
@@ -48,9 +48,9 @@ export default function AdminFinances() {
 function Summary({ tab, summary }: { tab: FinanceTab; summary: Record<string, number> }) { const values = tab === "monthly" ? [["totalExpected", "Total attendu"], ["totalPaid", "Total encaissé"], ["totalRemaining", "Reste à encaisser"]] : tab === "exceptional" ? [["totalCollected", "Total encaissé"], ["totalRemaining", "Reste à encaisser"], ["targetCount", "Cibles"]] : [["totalDisbursed", "Total décaissé"]]; return <View style={styles.stats}>{values.map(([key, label]) => <View key={key} style={styles.stat}><Text style={styles.statValue}>{key === "targetCount" ? String(summary[key] ?? 0) : money(summary[key] ?? 0)}</Text><Text style={styles.statLabel}>{label}</Text></View>)}</View>; }
 // Monthly RPC items include memberId, firstName, lastName and phone for identity-aware reminders.
 function FinanceCard({ tab, item }: { tab: FinanceTab; item: AdminFinance["items"][number] }) {
-  if (tab === "monthly") { const due = item as MonthlyDue; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{due.month}</Text><Status status={due.status} /></View><Text style={styles.cardMeta}>Échéance {date(due.dueDate)}</Text><View style={styles.amounts}><Text style={styles.amount}>{money(due.amountPaid)} / {money(due.amountDue)}</Text><Text style={styles.remaining}>{due.amountRemaining > 0 ? `Reste ${money(due.amountRemaining)}` : "Réglée"}</Text></View><Reminder item={due} /></View>; }
-  if (tab === "exceptional") { const contribution = item as ExceptionalContribution; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{contribution.label}</Text><Text style={styles.amount}>{money(contribution.amount)}</Text></View><Text style={styles.cardMeta}>Échéance {date(contribution.dueDate)}</Text></View>; }
-  const disbursement = item as Disbursement; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{disbursement.label}</Text><Text style={styles.amount}>− {money(disbursement.amount)}</Text></View><Text style={styles.cardMeta}>{date(disbursement.disbursedOn)} · {disbursement.type.replaceAll("_", " ")}</Text></View>;
+  if (tab === "monthly") { const due = item as MonthlyDue; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{due.month}</Text><Status status={due.status} /></View><Text style={styles.cardMeta}>Échéance {formatFinanceDate(due.dueDate)}</Text><View style={styles.amounts}><Text style={styles.amount}>{money(due.amountPaid)} / {money(due.amountDue)}</Text><Text style={styles.remaining}>{due.amountRemaining > 0 ? `Reste ${money(due.amountRemaining)}` : "Réglée"}</Text></View><Reminder item={due} /></View>; }
+  if (tab === "exceptional") { const contribution = item as ExceptionalContribution; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{contribution.label}</Text><Text style={styles.amount}>{money(contribution.amount)}</Text></View><Text style={styles.cardMeta}>Échéance {formatFinanceDate(contribution.dueDate)}</Text></View>; }
+  const disbursement = item as Disbursement; return <View style={styles.card}><View style={styles.cardTop}><Text style={styles.cardTitle}>{disbursement.label}</Text><Text style={styles.amount}>− {money(disbursement.amount)}</Text></View><Text style={styles.cardMeta}>{formatFinanceDate(disbursement.disbursedOn)} · {disbursement.type.replaceAll("_", " ")}</Text></View>;
 }
 function Status({ status }: { status: string }) { const label = status === "paid" ? "Réglée" : status === "partial" ? "Partielle" : "En retard"; return <Text style={[styles.chip, status === "paid" ? styles.paid : status === "partial" ? styles.partial : styles.unpaid]}>{label}</Text>; }
 function Reminder({ item }: { item: MonthlyDue & { phone?: string; firstName?: string } }) { const phone = item.phone?.replace(/[^\d+]/g, ""); if (!phone || !/^\+?[1-9]\d{7,14}$/.test(phone)) return null; const message = `Bonjour${item.firstName ? ` ${item.firstName}` : ""}, rappel de votre cotisation mensuelle (${item.month}).`; return <Pressable style={styles.reminder} onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/^\+/, "")}?text=${encodeURIComponent(message)}`)}><Feather name="message-circle" size={15} color="#007D74" /><Text style={styles.reminderText}>Relancer sur WhatsApp</Text></Pressable>; }
