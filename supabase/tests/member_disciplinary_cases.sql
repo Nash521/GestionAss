@@ -1,6 +1,6 @@
 begin;
 
-select plan(33);
+select plan(35);
 
 select has_function('public', 'open_member_disciplinary_case', array['uuid', 'uuid', 'text', 'integer', 'text', 'text', 'public.suspension_contribution_policy'], 'case opening RPC exists');
 select has_function('public', 'decide_member_disciplinary_case', array['uuid', 'uuid', 'public.disciplinary_case_status', 'public.disciplinary_sanction', 'text'], 'case decision RPC exists');
@@ -55,6 +55,7 @@ select 'stop', public.open_member_disciplinary_case(
 );
 
 select is(jsonb_array_length(public.get_member_disciplinary_cases('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000001')->'cases'), 1, 'listing returns cases for the selected member');
+select ok((public.get_member_disciplinary_cases('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000001')->'cases'->0) ?& array['id', 'memberId', 'reason', 'plannedDurationDays', 'observations', 'evidence', 'contributionPolicy', 'status', 'sanction', 'openedAt', 'openedBy', 'decidedAt', 'decidedBy'], 'listing serializes all mobile case fields');
 select throws_ok($$ select public.get_member_disciplinary_cases('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000004') $$, 'Member not found', 'listing hides a member from another organization');
 select throws_ok($$ select public.open_member_disciplinary_case('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000004', 'Cross-organization case', 30, null, null, 'continue') $$, 'Member not found', 'case opening hides a member from another organization');
 select throws_ok($$ select public.open_member_disciplinary_case('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000001', 'Duplicate open case', 30, null, null, 'continue') $$, 'An open disciplinary case already exists', 'a member cannot have two open cases');
@@ -75,6 +76,7 @@ select is(public.decide_member_disciplinary_case('51000000-0000-0000-0000-000000
 select is((select status::text from public.members where id = '53000000-0000-0000-0000-000000000002'), 'suspended', 'confirmed suspension suspends the member');
 select ok(not (select is_active from public.users where id = '51000000-0000-0000-0000-000000000004'), 'confirmed suspension deactivates the member account');
 select ok(exists (select 1 from public.member_lifecycle_audit where member_id = '53000000-0000-0000-0000-000000000002' and action = 'suspend' and previous_status = 'active' and next_status = 'suspended' and actor_id = '51000000-0000-0000-0000-000000000001'), 'confirmed suspension records the suspend audit action');
+select ok((public.get_member_disciplinary_cases('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000002')->'cases'->0) @> jsonb_build_object('decidedBy', '51000000-0000-0000-0000-000000000001') and (public.get_member_disciplinary_cases('51000000-0000-0000-0000-000000000001', '53000000-0000-0000-0000-000000000002')->'cases'->0->>'decidedAt') is not null, 'case list exposes the administrator and timestamp that recorded the decision');
 
 select is(public.decide_member_disciplinary_case('51000000-0000-0000-0000-000000000001', (select id from disciplinary_fixture_cases where label = 'stop'), 'confirmed', 'suspension', null)::text, 'suspended', 'a stop-policy suspension is applied only after decision');
 select is(public.generate_monthly_contribution_dues('51000000-0000-0000-0000-000000000001', '2026-10-01'), 2, 'monthly generation includes active members and suspended continue-policy members');
