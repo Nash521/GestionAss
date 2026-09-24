@@ -32,6 +32,11 @@ export type MonthlyDue = {
   id: string; memberId: string; firstName?: string; lastName?: string; phone?: string; month: string; dueDate: string;
   amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus;
 };
+export type MonthlyPaymentTransaction = {
+  id: string; memberId: string; firstName?: string; lastName?: string; phone?: string;
+  month: string; amount: number; paidOn: string; source: "manual" | "wave";
+  statusAfterPayment: "paid" | "partial"; remainingAfterPayment: number | null;
+};
 export type ExceptionalContribution = {
   id: string; label: string; amount: number; dueDate: string; createdAt: string;
 };
@@ -41,7 +46,7 @@ export type Disbursement = {
   exceptionalContributionId: string | null; justification: string;
 };
 export type AdminFinance = {
-  items: MonthlyDue[] | ExceptionalContribution[] | Disbursement[];
+  items: MonthlyPaymentTransaction[] | MonthlyDue[] | ExceptionalContribution[] | Disbursement[];
   metadata: { offset: number; limit: number; total: number };
   summary: Record<string, number>;
 };

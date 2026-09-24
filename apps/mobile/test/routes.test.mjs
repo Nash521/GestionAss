@@ -329,6 +329,15 @@ test('the admin layout owns persistent navigation and defers member creation to 
   assert.match(source, /return <Slot \/>;/);
 });
 
+test('monthly payment history is a dedicated admin route with pagination', async () => {
+  const source = await readFile(new URL('../app/(admin)/finances/monthly-transactions.tsx', import.meta.url), 'utf8');
+  assert.match(source, /getAdminFinance\("monthly"/);
+  assert.match(source, /MonthlyPaymentCard/);
+  assert.match(source, /Charger plus/);
+  assert.match(source, /Réessayer/);
+  assert.match(source, /<AdminHeader \/>/);
+});
+
 test('the member page provides administration, filters, and an entry point to account creation', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
   const newMember = await readFile(new URL('../app/(admin)/members/new.tsx', import.meta.url), 'utf8');
