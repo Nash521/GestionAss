@@ -22,7 +22,7 @@ try {
 }
 
 test("finance client exposes complete domain types", () => {
-  for (const name of ["AdminFinance", "FinanceTab", "MonthlyDue", "ExceptionalContribution", "Disbursement", "FinanceMember", "AdminFinanceAction"]) {
+  for (const name of ["AdminFinance", "FinanceTab", "MonthlyDue", "MonthlyPaymentTransaction", "ExceptionalContribution", "Disbursement", "FinanceMember", "AdminFinanceAction"]) {
     assert.match(source, new RegExp(`(?:type|interface) ${name}\\b`));
   }
   assert.match(source, /FinanceTab = "monthly" \| "exceptional" \| "disbursements"/);
@@ -61,8 +61,7 @@ test("finance overview exposes tabs, guarded loading, pagination and WhatsApp re
   assert.match(page, /D\xE9caissements/);
   assert.match(page, /requestSequence/);
   assert.match(page, /getAdminFinance/);
-  assert.match(page, /wa\.me/);
-  assert.match(page, /encodeURIComponent/);
+  assert.match(page, /MonthlyPaymentCard/);
   assert.match(page, /router\.push/);
   assert.match(page, /totalPaid/);
   assert.match(page, /totalExpected/);
@@ -86,6 +85,26 @@ test("finance overview never renders items loaded for a different selected tab",
   assert.match(page, /loadedTab\s*!==\s*tab/);
 });
 
+test("monthly overview shows six payment transactions and links to the full history", () => {
+  const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
+  assert.match(page, /MONTHLY_PREVIEW_SIZE\s*=\s*6/);
+  assert.match(page, /Voir toutes les transactions/);
+  assert.match(page, /monthly-transactions/);
+  assert.match(page, /metadata\.total\s*>\s*MONTHLY_PREVIEW_SIZE/);
+  assert.match(page, /MonthlyPaymentCard/);
+});
+
+test("monthly payment card keeps the list compact and opens payment details on tap", () => {
+  const card = fs.readFileSync(new URL("../src/features/finance/monthly-payment-card.tsx", import.meta.url), "utf8");
+  assert.match(card, /accessibilityRole="button"/);
+  assert.match(card, /onPress=\{\(\) => setDetailsVisible\(true\)\}/);
+  assert.match(card, /formatFinanceDate\(item\.paidOn\)/);
+  assert.match(card, /money\(item\.amount\)/);
+  assert.match(card, /item\.statusAfterPayment/);
+  assert.match(card, /<Modal[\s\S]*visible=\{detailsVisible\}/);
+  for (const detail of ["Mois concerné", "Mode de paiement", "remainingAfterPayment", "wa.me", "Espèces", "Wave"]) assert.match(card, new RegExp(detail));
+  assert.match(card, /statusAfterPayment\s*===\s*"partial"/);
+});
 test("finance migration returns monthly member identity for reminders", () => {
   const sql = fs.readFileSync(new URL("../../../supabase/migrations/202608200001_finance_management.sql", import.meta.url), "utf8");
   assert.match(sql, /'firstName',first_name/);

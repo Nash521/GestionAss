@@ -20,3 +20,7 @@ test("finance date formatting falls back instead of crashing on an invalid date"
 test("finance date formatting accepts valid date values", () => {
   assert.match(dateFormat.exports.formatFinanceDate("2026-09-23"), /23.*2026/);
 });
+
+test("finance date-only values are formatted without local timezone day shifts", () => {
+  assert.match(dateFormat.exports.formatFinanceDate("2026-03-01"), /1 mars 2026/i);
+});
