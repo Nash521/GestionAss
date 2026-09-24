@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminHeader } from "../../../src/components/admin-chrome";
-import { AdminMemberDetail, ContributionDue, getAdminMemberDetail, manageAdminMember } from "../../../src/lib/supabase";
+import { AdminMemberDetail, ContributionDue, getAdminMemberDetail, manageAdminMember } from "../../../src/features/members/api";
 
 const background = require("../../../assets/Fond_ecranMobile.png");
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
@@ -41,7 +41,7 @@ export default function MemberDetail() {
     return () => { requestSequence.current++; };
   }, [loadDetail, validMemberId]);
 
-  const body = !validMemberId ? <State message="Membre introuvable." /> : loading ? <State message="Chargement du membre…" /> : error || !detail ? <State message="Impossible de charger ce membre." retry={loadDetail} /> : <MemberContent detail={detail} />;
+  const body = !validMemberId ? <State message="Membre introuvable." /> : loading ? <State message="Chargement du membre…" /> : error || !detail ? <State message="Impossible de charger ce membre." retry={loadDetail} /> : <MemberContent detail={detail} onReactivate={loadDetail} />;
   return <View style={styles.page}>
     <ScrollView showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
       <Pressable accessibilityRole="button" accessibilityLabel="Retour aux membres" onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" color="#007D74" size={20} /><Text style={styles.backText}>Retour</Text></Pressable>
@@ -51,10 +51,10 @@ export default function MemberDetail() {
   </View>;
 }
 
-function MemberContent({ detail }: { detail: AdminMemberDetail }) {
+function MemberContent({ detail, onReactivate }: { detail: AdminMemberDetail; onReactivate: () => void }) {
   const { membershipFee, monthlyDues, exceptionalDues, aid, summary, chart } = detail;
   return <>
-    <IdentityCard detail={detail} />
+    <IdentityCard detail={detail} onReactivate={onReactivate} />
     <Section title="Droit d’adhésion"><View style={styles.amountGrid}><AmountCard label="Montant dû" value={money(membershipFee.amountDue)} /><AmountCard label="Montant réglé" value={money(membershipFee.amountPaid)} /><AmountCard label="Reste à payer" value={money(membershipFee.amountRemaining)} /></View><StatusPill status={membershipFee.status} /></Section>
     <Section title="Total cotisé"><View style={styles.amountGrid}><AmountCard label="Total" value={money(summary.totalContributed)} /><AmountCard label="Mensuel" value={money(summary.monthlyPaid)} /><AmountCard label="Exceptionnel" value={money(summary.exceptionalPaid)} /></View><View style={styles.amountGrid}><AmountCard label="Mensualités à payer" value={money(summary.monthlyRemaining)} /><AmountCard label="Exceptionnelles à payer" value={money(summary.exceptionalRemaining)} /></View></Section>
     <Section title="Calendrier des cotisations">{monthlyDues.length ? monthlyDues.map((due) => <ContributionRow key={due.id} due={due} />) : <Empty message="Aucune cotisation enregistrée." />}</Section>
@@ -64,10 +64,10 @@ function MemberContent({ detail }: { detail: AdminMemberDetail }) {
   </>;
 }
 
-function IdentityCard({ detail }: { detail: AdminMemberDetail }) {
+function IdentityCard({ detail, onReactivate }: { detail: AdminMemberDetail; onReactivate: () => void }) {
   const { member } = detail; const initials = `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`.toUpperCase();
-  const lifecycle = (action: "suspend" | "reactivate" | "archive", label: string) => Alert.alert(label, `Confirmer : ${label.toLowerCase()} ce membre ?`, [{ text: "Annuler", style: "cancel" }, { text: label, style: action === "archive" ? "destructive" : "default", onPress: () => { void manageAdminMember({ memberId: member.id, action }).then(load => load && router.back()).catch(() => Alert.alert("Action impossible", "Le changement n’a pas pu être enregistré.")); } }]);
-  return <View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View><View style={styles.identityInfo}><Text style={styles.name}>{member.firstName} {member.lastName}</Text><Text style={styles.meta}>{member.memberNumber}</Text><Text style={styles.meta}>{member.phone}</Text><Text style={styles.meta}>Adhésion : {date(member.joiningDate)}</Text><View style={styles.memberBadges}><Text style={styles.memberBadge}>{member.role === "admin" ? "Administrateur" : "Membre"}</Text><Text style={styles.memberBadge}>{memberStatusLabel(member.memberStatus)}</Text></View><Pressable onPress={() => router.push({ pathname: "/(admin)/members/edit", params: { memberId: member.id, firstName: member.firstName, lastName: member.lastName, phone: member.phone } })} accessibilityRole="button"><Text style={styles.action}>Modifier</Text></Pressable>{member.memberStatus === "active" ? <Pressable onPress={() => lifecycle("suspend", "Suspendre")} accessibilityRole="button"><Text style={styles.action}>Suspendre</Text></Pressable> : member.memberStatus === "suspended" ? <Pressable onPress={() => lifecycle("reactivate", "Réactiver")} accessibilityRole="button"><Text style={styles.action}>Réactiver</Text></Pressable> : null}{member.memberStatus !== "removed" ? <Pressable onPress={() => lifecycle("archive", "Archiver")} accessibilityRole="button"><Text style={styles.archiveAction}>Archiver</Text></Pressable> : null}</View></View>;
+  const reactivate = () => Alert.alert("Réactiver", "Confirmer la réactivation manuelle de ce membre ?", [{ text: "Annuler", style: "cancel" }, { text: "Réactiver", onPress: () => { void manageAdminMember({ memberId: member.id, action: "reactivate" }).then(onReactivate).catch(() => Alert.alert("Action impossible", "Le changement n’a pas pu être enregistré.")); } }]);
+  return <View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View><View style={styles.identityInfo}><Text style={styles.name}>{member.firstName} {member.lastName}</Text><Text style={styles.meta}>{member.memberNumber}</Text><Text style={styles.meta}>{member.phone}</Text><Text style={styles.meta}>Adhésion : {date(member.joiningDate)}</Text><View style={styles.memberBadges}><Text style={styles.memberBadge}>{member.role === "admin" ? "Administrateur" : "Membre"}</Text><Text style={styles.memberBadge}>{memberStatusLabel(member.memberStatus)}</Text></View><Pressable onPress={() => router.push({ pathname: "/(admin)/members/[memberId]/disciplinary", params: { memberId: member.id } })} accessibilityRole="button"><Text style={styles.action}>Dossiers disciplinaires</Text></Pressable><Pressable onPress={() => router.push({ pathname: "/(admin)/members/edit", params: { memberId: member.id, firstName: member.firstName, lastName: member.lastName, phone: member.phone } })} accessibilityRole="button"><Text style={styles.action}>Modifier</Text></Pressable>{member.memberStatus === "suspended" ? <Pressable onPress={reactivate} accessibilityRole="button"><Text style={styles.action}>Réactiver</Text></Pressable> : null}</View></View>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) { return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>; }

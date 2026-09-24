@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { manageAdminMember } from "../../../src/lib/supabase";
+import { manageAdminMember } from "../../../src/features/members/api";
 
 const phonePattern = /^\+2250[157]\d{8}$/;
 export default function EditMember() {

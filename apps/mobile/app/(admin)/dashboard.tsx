@@ -36,11 +36,11 @@ export default function AdminDashboard() {
 
   const cards = [
     ["users", "Total membres", String(data.totalMembers), "Voir les membres"],
-    ["check-circle", "Droits d’adhésion réglés", String(data.membersPaid), "Membres à jour sur l’adhésion"],
-    ["clock", "Droits d’adhésion à régulariser", String(data.membersLate), "Impayés ou paiements partiels"],
-    ["user-plus", "Droits d’adhésion dus", money(data.totalDue), "Montant total attendu"],
-    ["file-text", "Droits d’adhésion encaissés", money(data.totalCollected), "Montant déjà réglé"],
-    ["credit-card", "Reste sur droits d’adhésion", money(data.totalOutstanding), "Montant restant à encaisser"],
+    ["calendar", "Total à jour", String(data.membersPaid), "Cotisations réglées"],
+    ["clock", "Total en retard", String(data.membersLate), "À relancer"],
+    ["user-plus", "Total mensualités impayées", money(data.totalMonthlyOutstanding), "Reste à recouvrer"],
+    ["file-text", "Total caisse", money(data.totalCash), "Adhésions + mensualités − dépenses"],
+    ["shield", "Total dépense", money(data.totalExpenses), "Somme des dépenses"],
   ] as const;
 
   return <View style={styles.page}>

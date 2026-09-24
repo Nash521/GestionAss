@@ -49,3 +49,12 @@ Supabase ne permet pas à une Edge Function de révoquer les refresh tokens d'un
 - La migration de réservation OTP doit encore être appliquée et testée sur une instance Supabase locale ou de préproduction ; les variables locales nécessaires n'étaient pas disponibles pendant cet audit.
 - Supabase exige le JWT actif de l'utilisateur pour révoquer ses refresh tokens et ne permet pas de révoquer un access token avant son expiration. La réinitialisation ne tente donc plus une déconnexion globale invalide avec un UUID. Une révocation globale fiable nécessite un futur mécanisme de version de session contrôlé par chaque endpoint.
 - Une demande de nouvel OTP après le délai de renvoi peut concurrencer une réinitialisation exceptionnellement longue. Ce cas doit recevoir une conception dédiée avant une garantie de sérialisation complète entre Supabase Auth et PostgreSQL.
+
+## Note d’avancement — 23 septembre 2026 — workflow disciplinaire membre
+
+- L’ouverture d’un dossier disciplinaire conserve le membre et son compte actifs. Le dossier enregistre l’administrateur initiateur et une règle SQL interdit deux dossiers ouverts simultanément pour le même membre.
+- Les sanctions de suspension et d’exclusion ne sont appliquées qu’à la décision. La décision est transactionnelle, auditée et protège le dernier administrateur actif. Une suspension n’expire pas automatiquement : la réactivation reste une action manuelle d’un administrateur.
+- La politique de cotisation `continue` génère les échéances pendant une suspension confirmée ; `stop` ne le fait pas. Les écritures financières existantes ne sont pas supprimées.
+- Les dossiers sont isolés par organisation via une Edge Function qui valide les actions et masque les erreurs internes. Les anciens points d’entrée génériques refusent désormais `suspend` et `archive`; le module mobile membre est isolé derrière une API dédiée.
+- Vérifications locales : `pnpm quality` réussi (52 tests mobile, 83 tests Edge réussis et 9 ignorés car dépendants de services locaux) ; `supabase test db --local` réussi (231 assertions pgTAP). Les migrations `202609220001` et `202609230001` sont appliquées à la base locale sans réinitialisation.
+- La validation manuelle complète sur téléphone avec un compte de test et le déploiement/vérification en production restent à faire ; ces résultats locaux ne prouvent pas l’état d’un projet Supabase distant.

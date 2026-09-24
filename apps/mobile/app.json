@@ -2,6 +2,7 @@
   "expo": {
     "name": "GestionAss",
     "slug": "gestion-ass",
+    "scheme": "gestion-ass",
     "plugins": [
       "expo-router",
       ["expo-local-authentication", { "faceIDPermission": "Autoriser GestionAss à utiliser Face ID pour vous connecter." }],

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type, authorization, apikey" };
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers });
 const phonePattern = /^\+2250[157]\d{8}$/;
-const actions = new Set(["update", "suspend", "reactivate", "archive"]);
+const actions = new Set(["update", "reactivate"]);
 
 export const createHandler = (databaseFactory = (url: string, key: string) => createClient(url, key, { auth: { persistSession: false } })) => async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
@@ -21,4 +21,4 @@ export const createHandler = (databaseFactory = (url: string, key: string) => cr
   } catch { return response({ error: "Invalid request" }, 400); }
 };
 
-Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, createHandler());
+if (import.meta.main) Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, createHandler());

@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader } from "../../src/components/admin-chrome";
-import { AdminMember, AdminMembersPage, getAdminMembers } from "../../src/lib/supabase";
+import { AdminMember, AdminMembersPage, getAdminMembers } from "../../src/features/members/api";
 
 const background = require("../../assets/Fond_ecranMobile.png");
 const emptyPage: AdminMembersPage = { totalMembers: 0, membersLate: 0, membersPaid: 0, members: [] };
