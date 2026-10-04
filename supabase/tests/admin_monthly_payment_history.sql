@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(15);
 
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -24,28 +24,25 @@ values ('63000000-0000-0000-0000-000000000001', '62000000-0000-0000-0000-0000000
 select public.generate_monthly_contribution_dues('61000000-0000-0000-0000-000000000001', '2026-03-01');
 create temporary table history_due as select id from public.monthly_contribution_dues where member_id='63000000-0000-0000-0000-000000000001' and contribution_month='2026-03-01';
 select public.record_contribution_payment('61000000-0000-0000-0000-000000000001', 'monthly', (select id from history_due), 400, '2026-03-10', 'HIST-001', 'manual');
-select public.record_contribution_payment('61000000-0000-0000-0000-000000000001', 'monthly', (select id from history_due), 350, '2026-03-11', 'HIST-002', 'wave');
-select public.record_contribution_payment('61000000-0000-0000-0000-000000000001', 'monthly', (select id from history_due), 250, '2026-03-12', 'HIST-003', 'manual');
+select public.record_contribution_payment('61000000-0000-0000-0000-000000000001', 'monthly', (select id from history_due), 600, '2026-03-12', 'HIST-002', 'wave');
 select public.generate_monthly_contribution_dues('61000000-0000-0000-0000-000000000003', '2026-03-01');
 create temporary table other_history_due as select id from public.monthly_contribution_dues where member_id='63000000-0000-0000-0000-000000000002' and contribution_month='2026-03-01';
 select public.record_contribution_payment('61000000-0000-0000-0000-000000000003', 'monthly', (select id from other_history_due), 100, '2026-03-13', 'OTHER-001', 'wave');
 
-select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'metadata'->>'total')::integer, 3, 'monthly total counts payment events, not due balances');
-select is(jsonb_array_length(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'), 3, 'each payment is returned as a separate transaction');
-select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'amount')::numeric, 250::numeric, 'transaction amount is not the cumulative paid amount');
-select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'source', 'manual', 'the payment method is exposed');
+select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'metadata'->>'total')::integer, 2, 'monthly total counts payment events, not due balances');
+select is(jsonb_array_length(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'), 2, 'each payment is returned as a separate transaction');
+select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'amount')::numeric, 600::numeric, 'transaction amount is not the cumulative paid amount');
+select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'source', 'wave', 'the payment method is exposed');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'statusAfterPayment', 'paid', 'the last historical event settles the due');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->'remainingAfterPayment', 'null'::jsonb, 'a settled payment has no remaining balance');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->1->>'statusAfterPayment', 'partial', 'an earlier event remains historically partial');
-select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->1->>'remainingAfterPayment')::numeric, 250::numeric, 'remaining balance is computed at the selected event');
-select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->1->>'source', 'wave', 'Wave remains distinguishable from cash payments');
-select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->2->>'statusAfterPayment', 'partial', 'the first event is historically partial');
-select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->2->>'remainingAfterPayment')::numeric, 600::numeric, 'first event has its correct historical remainder');
+select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->1->>'remainingAfterPayment')::numeric, 600::numeric, 'remaining balance is computed at the selected event');
+select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->1->>'source', 'manual', 'cash remains distinguishable from Wave payments');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'month', '2026-03-01', 'transaction includes the contribution month');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'firstName', 'Awa', 'transaction includes the member identity');
 select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'paidOn', '2026-03-12', 'transaction includes its payment date');
-select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'id', (select id::text from public.contribution_payments where payment_reference='HIST-003'), 'latest payment appears first in descending order');
-select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 1, 1)->'items'->0->>'amount')::numeric, 350::numeric, 'monthly history applies offset and limit to transaction rows');
+select is(public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items'->0->>'id', (select id::text from public.contribution_payments where payment_reference='HIST-002'), 'latest payment appears first in descending order');
+select is((public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 1, 1)->'items'->0->>'amount')::numeric, 400::numeric, 'monthly history applies offset and limit to transaction rows');
 select ok(not (public.get_admin_finance('61000000-0000-0000-0000-000000000001', 'monthly', 0, 20)->'items' @> jsonb_build_array(jsonb_build_object('memberId', '63000000-0000-0000-0000-000000000002'))), 'monthly payment history is isolated from another organization');
 
 select * from finish();

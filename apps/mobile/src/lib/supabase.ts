@@ -17,7 +17,8 @@ export async function getSessionDestination() {
   return invokeRegistrationFunction<{ destination: SessionDestination; role?: AccountRole }>("get-session-destination", {});
 }
 
-export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalMonthlyOutstanding: number; totalCash: number; totalExpenses: number };
+export type DashboardTransaction = { id: string; kind: "membership" | "monthly" | "exceptional" | "expense"; label: string; memberName: string; amount: number; occurredOn: string };
+export type DashboardSummary = { organizationName: string; totalMembers: number; membersPaid: number; membersLate: number; totalMonthlyOutstanding: number; totalExceptionalOutstanding: number; totalCash: number; totalExpenses: number; contributionChart: { month: string; expected: number; collected: number }[]; recentTransactions: DashboardTransaction[] };
 export function getAdminDashboard() { return invokeRegistrationFunction<DashboardSummary>("get-admin-dashboard", {}); }
 
 export type OpenDue = { id: string; kind: "membership" | "monthly" | "exceptional"; label: string; dueDate: string | null; amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus };
@@ -50,15 +51,19 @@ export type AdminFinance = {
   metadata: { offset: number; limit: number; total: number };
   summary: Record<string, number>;
 };
-export type MonthlyContributionSettings = { monthlyAmount: number; dueDay: number };
+export type MonthlyContributionSettings = { membershipFeeAmount: number; monthlyAmount: number; dueDay: number; maxPayments: number };
+export type MonthlyPaymentContext = { memberId: string; memberName: string; dueId: string; month: string; amountDue: number; amountPaid: number; amountRemaining: number; status: FinanceStatus; paymentCount: number; maxPayments: number };
 
 export type AdminFinanceAction =
   | { action: "getMonthlySettings" }
+  | { action: "getMonthlyPaymentContext"; memberId: string; dueId: string }
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
+  | { action: "recordMonthlyStepPayment"; memberId: string; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
   | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
-  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
+  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number; maxPayments: number }
+  | { action: "updateContributionSettings"; membershipFeeAmount: number; monthlyAmount: number; dueDay: number; maxPayments: number };
   
 
 type FinanceInvoker = <T>(name: string, body: Record<string, unknown>) => Promise<T>;
@@ -74,4 +79,8 @@ export function createAdminFinanceAction(action: AdminFinanceAction, invoke: Fin
 
 export function getMonthlyContributionSettings(invoke: FinanceInvoker = invokeRegistrationFunction) {
   return invoke<{ id: MonthlyContributionSettings }>("create-admin-finance-action", { action: "getMonthlySettings" });
+}
+
+export function getMonthlyPaymentContext(memberId: string, dueId: string, invoke: FinanceInvoker = invokeRegistrationFunction) {
+  return invoke<{ id: MonthlyPaymentContext }>("create-admin-finance-action", { action: "getMonthlyPaymentContext", memberId, dueId });
 }

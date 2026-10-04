@@ -5,6 +5,7 @@
     "scheme": "gestion-ass",
     "plugins": [
       "expo-router",
+      ["expo-image-picker", { "photosPermission": "Autoriser GestionAss à choisir le logo de l’association dans vos photos." }],
       ["expo-local-authentication", { "faceIDPermission": "Autoriser GestionAss à utiliser Face ID pour vous connecter." }],
       "expo-secure-store"
     ],

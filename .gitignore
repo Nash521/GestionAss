@@ -2,6 +2,7 @@ node_modules/
 .pnpm-store/
 .turbo/
 supabase/.temp/
+supabase/.branches/
 expo-sdk57-qr.png
 .expo/
 .env
