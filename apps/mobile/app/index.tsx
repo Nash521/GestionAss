@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { router } from "expo-router";
 import { Image, StyleSheet, View } from "react-native";
+import { LoadingState } from "../src/components/loading-state";
 import { unlockWithBiometrics } from "../src/lib/biometric-session";
 import { getSessionDestination, getSupabaseClient } from "../src/lib/supabase";
 
@@ -26,6 +27,7 @@ export default function Index() {
   return (
     <View style={styles.page}>
       <Image source={logo} style={styles.logo} accessibilityLabel="Logo GestionAss" />
+      <LoadingState label="Ouverture de votre espace…" />
     </View>
   );
 }

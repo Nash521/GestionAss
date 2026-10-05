@@ -5,8 +5,11 @@ export interface SmsProvider {
 }
 
 export class NoopSmsProvider implements SmsProvider {
-  async send(_message: SmsMessage): Promise<void> {
-    // Local development deliberately never sends real SMS messages.
+  async send(message: SmsMessage): Promise<void> {
+    // Explicit local-only option for testing OTP flows without an SMS contract.
+    if (Deno.env.get("DENO_ENV") !== "production" && Deno.env.get("LOCAL_SMS_LOG_CODES") === "true") {
+      console.info(`LOCAL SMS to ${message.to}: ${message.body}`);
+    }
   }
 }
 

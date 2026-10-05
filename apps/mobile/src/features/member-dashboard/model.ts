@@ -24,6 +24,13 @@ export type MemberDashboardData = {
   exceptionalDues: MemberExceptionalDue[];
 };
 
+export const abidjanToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Abidjan", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+
+export function activeExceptionalDues(dues: MemberExceptionalDue[], today: string) {
+  return dues.filter((due) => due.dueDate > today && due.amountDue > due.amountPaid)
+    .sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+}
+
 export function buildMemberDashboard(data: MemberDashboardData, year: number) {
   const monthly = data.monthlyDues;
   const exceptional = data.exceptionalDues;

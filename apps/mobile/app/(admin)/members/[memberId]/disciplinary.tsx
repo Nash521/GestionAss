@@ -1,8 +1,10 @@
+import { LoadingState, LoadingLabel } from "../../../../src/components/loading-state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader } from "../../../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../../../src/components/use-admin-header-scroll";
 import {
   AdminMemberDetail,
   decideDisciplinaryCase,
@@ -35,6 +37,7 @@ const statusLabel = (status: DisciplinaryCase["status"]) => ({ open: "À instrui
 const sanctionLabel = (sanction: Sanction) => ({ none: "Aucune", warning: "Avertissement", suspension: "Suspension", removal: "Exclusion" })[sanction];
 
 export default function MemberDisciplinaryCases() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const { memberId } = useLocalSearchParams<{ memberId?: string }>();
   const memberIdIsValid = typeof memberId === "string" && memberId.length > 0;
   const [detail, setDetail] = useState<AdminMemberDetail | null>(null);
@@ -142,7 +145,7 @@ export default function MemberDisciplinaryCases() {
   const body = !memberIdIsValid
     ? <State message="Membre introuvable." />
     : loading && !detail
-    ? <State message="Chargement des dossiers…" />
+    ? <LoadingState label="Chargement des dossiers…" />
     : loadError && !detail
     ? <State message={loadError} retry={() => void loadData()} />
     : detail
@@ -157,7 +160,7 @@ export default function MemberDisciplinaryCases() {
         {cases.length === 0 ? <Text style={styles.empty}>Aucun dossier disciplinaire pour ce membre.</Text> : cases.map((item) => <CaseCard key={item.id} item={item} />)}
         {loadError ? <Text accessibilityLiveRegion="polite" style={styles.error}>{loadError}</Text> : null}
         <Pressable accessibilityRole="button" disabled={saving || loading} onPress={() => void loadData()} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>{loading ? "Actualisation…" : "Actualiser les dossiers"}</Text>
+          <LoadingLabel loading={!!(loading)} style={styles.secondaryButtonText}>{loading ? "Actualisation…" : "Actualiser les dossiers"}</LoadingLabel>
         </Pressable>
       </Section>
 
@@ -191,7 +194,7 @@ export default function MemberDisciplinaryCases() {
     : <State message="Impossible de charger les dossiers disciplinaires." retry={() => void loadData()} />;
 
   return <View style={styles.page}>
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView onScroll={handleHeaderScroll} scrollEventThrottle={16} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
         <View style={styles.content}>
           <Pressable accessibilityRole="button" accessibilityLabel="Retour à la fiche membre" onPress={() => router.back()} style={styles.back}>
@@ -203,7 +206,7 @@ export default function MemberDisciplinaryCases() {
         </View>
       </ImageBackground>
     </ScrollView>
-    <AdminHeader />
+    <AdminHeader translateY={headerTranslateY} />
   </View>;
 }
 
@@ -225,7 +228,7 @@ function OpeningForm({
     <Choice label="Continuent d’être appelées" selected={contributionPolicy === "continue"} disabled={disabled} onPress={() => onPolicyChange("continue")} />
     <Choice label="S’arrêtent pendant la suspension" selected={contributionPolicy === "stop"} disabled={disabled} onPress={() => onPolicyChange("stop")} />
     <Pressable accessibilityRole="button" disabled={disabled} onPress={onSubmit} style={[styles.primaryButton, disabled && styles.disabled]}>
-      <Text style={styles.primaryButtonText}>{disabled ? "Enregistrement…" : "Ouvrir le dossier"}</Text>
+      <LoadingLabel loading={!!(disabled)} style={styles.primaryButtonText}>{disabled ? "Enregistrement…" : "Ouvrir le dossier"}</LoadingLabel>
     </Pressable>
   </Section>;
 }
@@ -244,7 +247,7 @@ function DecisionForm({ disabled, outcome, sanction, observations, onOutcomeChan
     </View> : <Text style={styles.note}>Un rejet est toujours enregistré sans sanction.</Text>}
     <Field label="Observations de décision (facultatif)" value={observations} onChangeText={onObservationsChange} multiline />
     <Pressable accessibilityRole="button" disabled={disabled} onPress={onSubmit} style={[styles.primaryButton, disabled && styles.disabled]}>
-      <Text style={styles.primaryButtonText}>{disabled ? "Enregistrement…" : "Enregistrer la décision"}</Text>
+      <LoadingLabel loading={!!(disabled)} style={styles.primaryButtonText}>{disabled ? "Enregistrement…" : "Enregistrer la décision"}</LoadingLabel>
     </Pressable>
   </Section>;
 }

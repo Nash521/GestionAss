@@ -1,8 +1,10 @@
+import { LoadingState, LoadingLabel } from "../../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminHeader } from "../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../src/components/use-admin-header-scroll";
 import { formatFinanceDate } from "../../src/lib/date-format";
 import { AdminFinance, Disbursement, ExceptionalContribution, FinanceTab, getAdminFinance } from "../../src/lib/supabase";
 
@@ -10,6 +12,7 @@ type Tab = Exclude<FinanceTab, "monthly">;
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
 
 export default function AdminFinances() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const [tab, setTab] = useState<Tab>("exceptional");
   const [loadedTab, setLoadedTab] = useState<Tab | null>(null);
   const [data, setData] = useState<AdminFinance | null>(null);
@@ -36,7 +39,7 @@ export default function AdminFinances() {
   const busy = loading || (!error && loadedTab !== tab);
   const openForm = () => router.push({ pathname: "/(admin)/finances/new", params: { kind: expense ? "disbursement" : "exceptional" } });
 
-  return <View style={styles.page}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+  return <View style={styles.page}><ScrollView onScroll={handleHeaderScroll} scrollEventThrottle={16} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
     <View style={styles.heading}><Text style={styles.kicker}>GESTION FINANCIÈRE</Text><Text style={styles.title}>Finances</Text><Text style={styles.subtitle}>Suivez les entrées et les sorties de l’association.</Text></View>
     <View style={styles.tabs}>
       <Pressable accessibilityRole="tab" accessibilityState={{ selected: !expense }} onPress={() => setTab("exceptional")} style={[styles.tab, !expense && styles.tabActive]}><Feather name="gift" size={16} color={!expense ? "#FFF" : "#65758A"} /><Text style={[styles.tabText, !expense && styles.tabTextActive]}>Cotisations</Text></Pressable>
@@ -49,8 +52,8 @@ export default function AdminFinances() {
     </View>
     <Pressable accessibilityRole="button" onPress={openForm} style={styles.primary}><View style={styles.primaryIcon}><Feather name="plus" size={19} color="#087C70" /></View><Text style={styles.primaryText}>{expense ? "Nouveau décaissement" : "Créer une cotisation"}</Text><Feather name="arrow-right" size={18} color="#FFF" /></Pressable>
     <View style={styles.section}><View><Text style={styles.sectionTitle}>{expense ? "Décaissements récents" : "Cotisations récentes"}</Text><Text style={styles.sectionSubtitle}>{expense ? "Historique des sorties de trésorerie" : "Échéances et montants demandés"}</Text></View>{!busy && !error ? <Text style={styles.count}>{data?.metadata.total ?? 0}</Text> : null}</View>
-    {busy ? <Text style={styles.message}>Chargement des finances…</Text> : error ? <View style={styles.empty}><Feather name="alert-circle" size={28} color="#A45747" /><Text style={styles.message}>Impossible de charger les finances.</Text><Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Réessayer</Text></Pressable></View> : items.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Feather name={expense ? "inbox" : "gift"} size={25} color="#087C70" /></View><Text style={styles.emptyTitle}>Aucune opération</Text><Text style={styles.emptyText}>{expense ? "Les décaissements enregistrés apparaîtront ici." : "Les cotisations créées apparaîtront ici."}</Text></View> : <View style={styles.list}>{items.map((item, index) => <FinanceCard key={(item as { id?: string }).id ?? index} tab={tab} item={item as ExceptionalContribution | Disbursement} />)}{data && items.length < data.metadata.total ? <Pressable accessibilityRole="button" style={styles.more} disabled={loadingMore} onPress={() => void load(items.length)}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Afficher plus"}</Text><Feather name="chevron-down" size={16} color="#087C70" /></Pressable> : null}</View>}
-  </ScrollView><AdminHeader /></View>;
+    {busy ? <LoadingState label="Chargement des finances…" /> : error ? <View style={styles.empty}><Feather name="alert-circle" size={28} color="#A45747" /><Text style={styles.message}>Impossible de charger les finances.</Text><Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Réessayer</Text></Pressable></View> : items.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Feather name={expense ? "inbox" : "gift"} size={25} color="#087C70" /></View><Text style={styles.emptyTitle}>Aucune opération</Text><Text style={styles.emptyText}>{expense ? "Les décaissements enregistrés apparaîtront ici." : "Les cotisations créées apparaîtront ici."}</Text></View> : <View style={styles.list}>{items.map((item, index) => <FinanceCard key={(item as { id?: string }).id ?? index} tab={tab} item={item as ExceptionalContribution | Disbursement} />)}{data && items.length < data.metadata.total ? <Pressable accessibilityRole="button" style={styles.more} disabled={loadingMore} onPress={() => void load(items.length)}><LoadingLabel loading={!!(loadingMore)} style={styles.moreText}>{loadingMore ? "Chargement…" : "Afficher plus"}</LoadingLabel><Feather name="chevron-down" size={16} color="#087C70" /></Pressable> : null}</View>}
+  </ScrollView><AdminHeader translateY={headerTranslateY} /></View>;
 }
 
 function FinanceCard({ tab, item }: { tab: Tab; item: ExceptionalContribution | Disbursement }) {
@@ -58,7 +61,7 @@ function FinanceCard({ tab, item }: { tab: Tab; item: ExceptionalContribution | 
   const date = expense ? (item as Disbursement).disbursedOn : (item as ExceptionalContribution).dueDate;
   const expenseType = expense ? (item as Disbursement).type : "";
   const category = expense ? expenseType === "member_aid" ? "Aide à un membre" : expenseType === "exceptional_contribution_payment" ? "Cotisation exceptionnelle" : "Dépense générale" : "Cotisation exceptionnelle";
-  return <View style={styles.card}><View style={[styles.cardIcon, expense && styles.cardIconExpense]}><Feather name={expense ? "arrow-up-right" : "gift"} size={20} color={expense ? "#B4613F" : "#087C70"} /></View><View style={styles.cardBody}><Text style={styles.cardTitle} numberOfLines={2}>{item.label}</Text><Text style={styles.cardMeta}>{category}</Text><View style={styles.dateRow}><Feather name="calendar" size={12} color="#82949C" /><Text style={styles.cardDate}>{formatFinanceDate(date)}</Text></View></View><Text style={[styles.cardAmount, expense && styles.cardAmountExpense]}>{expense ? "− " : "+ "}{money(item.amount)}</Text></View>;
+  return <Pressable accessibilityRole={expense ? undefined : "button"} accessibilityLabel={expense ? undefined : `Voir le détail de ${item.label}`} disabled={expense} onPress={() => router.push({ pathname: "/(admin)/finances/[contributionId]", params: { contributionId: item.id } })} style={styles.card}><View style={[styles.cardIcon, expense && styles.cardIconExpense]}><Feather name={expense ? "arrow-up-right" : "gift"} size={20} color={expense ? "#B4613F" : "#087C70"} /></View><View style={styles.cardBody}><Text style={styles.cardTitle} numberOfLines={2}>{item.label}</Text><Text style={styles.cardMeta}>{category}</Text><View style={styles.dateRow}><Feather name="calendar" size={12} color="#82949C" /><Text style={styles.cardDate}>{formatFinanceDate(date)}</Text></View></View><Text style={[styles.cardAmount, expense && styles.cardAmountExpense]}>{expense ? "− " : "+ "}{money(item.amount)}</Text>{!expense ? <Feather name="chevron-right" size={16} color="#087C70" /> : null}</Pressable>;
 }
 
 const styles = StyleSheet.create({

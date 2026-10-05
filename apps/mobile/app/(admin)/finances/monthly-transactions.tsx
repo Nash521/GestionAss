@@ -1,8 +1,10 @@
+import { LoadingState, LoadingLabel } from "../../../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminHeader } from "../../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../../src/components/use-admin-header-scroll";
 import { MonthlyPaymentCard } from "../../../src/features/finance/monthly-payment-card";
 import { getAdminFinance, type MonthlyPaymentTransaction } from "../../../src/lib/supabase";
 
@@ -10,6 +12,7 @@ const background = require("../../../assets/Fond_ecranMobile.png");
 const PAGE_SIZE = 20;
 
 export default function MonthlyTransactions() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const [items, setItems] = useState<MonthlyPaymentTransaction[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -54,22 +57,22 @@ export default function MonthlyTransactions() {
   }, [loadFirstPage]);
 
   return <View style={styles.page}>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+    <ScrollView onScroll={handleHeaderScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
       <ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
         <View style={styles.content}>
           <Pressable accessibilityRole="button" accessibilityLabel="Retour aux finances" onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={18} color="#007D74" /><Text style={styles.backText}>Finances</Text></Pressable>
           <Text style={styles.kicker}>Mensualités</Text>
           <Text style={styles.title}>Toutes les transactions</Text>
           <Text style={styles.subtitle}>Historique des paiements enregistrés, du plus récent au plus ancien.</Text>
-          {loading ? <Text style={styles.message}>Chargement des transactions…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les transactions.</Text><Pressable accessibilityRole="button" onPress={() => void loadFirstPage()}><Text style={styles.action}>Réessayer</Text></Pressable></View> : items.length === 0 ? <Text style={styles.message}>Aucun paiement de mensualité pour le moment.</Text> : <>
+          {loading ? <LoadingState label="Chargement des transactions…" /> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les transactions.</Text><Pressable accessibilityRole="button" onPress={() => void loadFirstPage()}><Text style={styles.action}>Réessayer</Text></Pressable></View> : items.length === 0 ? <Text style={styles.message}>Aucun paiement de mensualité pour le moment.</Text> : <>
             <Text accessibilityLiveRegion="polite" style={styles.count}>{items.length} sur {total} transaction{total > 1 ? "s" : ""}</Text>
             <View style={styles.list}>{items.map((item) => <MonthlyPaymentCard key={item.id} item={item} />)}</View>
-            {items.length < total ? moreError ? <View style={styles.state}><Text style={styles.message}>La suite de l’historique n’a pas pu être chargée.</Text><Pressable accessibilityRole="button" onPress={() => void loadMore()}><Text style={styles.action}>Réessayer</Text></Pressable></View> : <Pressable accessibilityRole="button" accessibilityState={{ disabled: loadingMore }} style={styles.more} disabled={loadingMore} onPress={() => void loadMore()}><Text style={styles.action}>{loadingMore ? "Chargement…" : "Charger plus"}</Text></Pressable> : <Text style={styles.end}>Fin de l’historique</Text>}
+            {items.length < total ? moreError ? <View style={styles.state}><Text style={styles.message}>La suite de l’historique n’a pas pu être chargée.</Text><Pressable accessibilityRole="button" onPress={() => void loadMore()}><Text style={styles.action}>Réessayer</Text></Pressable></View> : <Pressable accessibilityRole="button" accessibilityState={{ disabled: loadingMore }} style={styles.more} disabled={loadingMore} onPress={() => void loadMore()}><LoadingLabel loading={!!(loadingMore)} style={styles.action}>{loadingMore ? "Chargement…" : "Charger plus"}</LoadingLabel></Pressable> : <Text style={styles.end}>Fin de l’historique</Text>}
           </>}
         </View>
       </ImageBackground>
     </ScrollView>
-    <AdminHeader />
+    <AdminHeader translateY={headerTranslateY} />
   </View>;
 }
 

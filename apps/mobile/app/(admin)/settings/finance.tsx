@@ -1,3 +1,4 @@
+import { LoadingState, LoadingLabel } from "../../../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -179,10 +180,10 @@ export default function FinanceSettings() {
       <Text style={styles.label}>Adresse</Text><TextInput accessibilityLabel="Adresse de l’association" value={association.address} onChangeText={(value) => updateAssociation("address", value)} editable={!associationLoading && !associationSaving} maxLength={500} multiline placeholder="Adresse de l’association" style={[styles.input, styles.addressInput]} />
       <Text style={styles.label}>Téléphone</Text><TextInput accessibilityLabel="Téléphone de l’association" value={association.phone} onChangeText={(value) => updateAssociation("phone", value)} editable={!associationLoading && !associationSaving} keyboardType="phone-pad" placeholder="+225…" style={styles.input} />
       <Text style={styles.label}>E-mail</Text><TextInput accessibilityLabel="E-mail de l’association" value={association.email} onChangeText={(value) => updateAssociation("email", value)} editable={!associationLoading && !associationSaving} keyboardType="email-address" autoCapitalize="none" maxLength={254} placeholder="contact@association.ci" style={styles.input} />
-      {associationLoading ? <Text style={styles.hint}>Chargement des informations…</Text> : null}
+      {associationLoading ? <LoadingState label="Chargement des informations…" /> : null}
       {associationError ? <Text style={styles.error} accessibilityRole="alert">{associationError}</Text> : null}
       {associationSaved ? <Text style={styles.success}>Informations de l’association enregistrées.</Text> : null}
-      <Pressable accessibilityRole="button" disabled={associationLoading || associationSaving || !organizationId} onPress={() => void saveAssociation()} style={[styles.submit, (associationLoading || associationSaving || !organizationId) && styles.disabled]}><Text style={styles.submitText}>{associationSaving ? "Enregistrement…" : "Enregistrer l’association"}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={associationLoading || associationSaving || !organizationId} onPress={() => void saveAssociation()} style={[styles.submit, (associationLoading || associationSaving || !organizationId) && styles.disabled]}><LoadingLabel loading={!!(associationSaving)} style={styles.submitText}>{associationSaving ? "Enregistrement…" : "Enregistrer l’association"}</LoadingLabel></Pressable>
     </View>
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Cotisations</Text>
@@ -192,21 +193,21 @@ export default function FinanceSettings() {
       <Text style={styles.label}>Jour d’échéance (1 à 28)</Text><TextInput value={dueDay} onChangeText={setDueDay} editable={!loading && !saving} keyboardType="number-pad" style={styles.input} accessibilityLabel="Jour d'échéance" />
       <Text style={styles.label}>Nombre maximal de versements par mensualité</Text><View style={styles.paymentOptions}>{(["1", "2"] as const).map((option) => <Pressable key={option} accessibilityRole="button" accessibilityLabel={`${option} versement${option === "2" ? "s" : ""} maximum`} accessibilityState={{ selected: maxPayments === option }} disabled={loading || saving} onPress={() => { setMaxPayments(option); setSaved(false); setError(""); }} style={[styles.paymentOption, maxPayments === option && styles.paymentOptionSelected]}><Text style={[styles.paymentOptionText, maxPayments === option && styles.paymentOptionTextSelected]}>{option === "1" ? "En une fois" : "En deux fois"}</Text></Pressable>)}</View>
       <Text style={styles.hint}>Le dernier versement doit régler tout le solde de la mensualité.</Text>
-      {loading ? <Text style={styles.hint}>Chargement des cotisations…</Text> : null}
+      {loading ? <LoadingState label="Chargement des cotisations…" /> : null}
       {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
       {saved ? <Text style={styles.success}>Paramètres enregistrés.</Text> : null}
-      <Pressable accessibilityRole="button" disabled={loading || saving} onPress={() => void save()} style={[styles.submit, (loading || saving) && styles.disabled]}><Text style={styles.submitText}>{saving ? "Enregistrement…" : "Enregistrer les cotisations"}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={loading || saving} onPress={() => void save()} style={[styles.submit, (loading || saving) && styles.disabled]}><LoadingLabel loading={!!(saving)} style={styles.submitText}>{saving ? "Enregistrement…" : "Enregistrer les cotisations"}</LoadingLabel></Pressable>
     </View>
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Finance</Text>
       <Text style={styles.hint}>Préparez les comptes Business de votre association. Les clés sont chiffrées côté serveur et ne sont jamais réaffichées.</Text>
-      {providerLoading ? <Text style={styles.hint}>Chargement des comptes…</Text> : null}
+      {providerLoading ? <LoadingState label="Chargement des comptes…" /> : null}
       {providers.map((provider) => {
         const configured = providerStatuses.some((item) => item.provider === provider.key && item.configured);
         return <View key={provider.key} style={styles.providerCard}>
           <View style={styles.providerHeading}><View style={styles.providerLogo}><Image source={provider.key === "wave" ? require("../../../assets/wave-logo.png") : provider.key === "orange_money" ? require("../../../assets/orange-money-logo.jpg") : require("../../../assets/mtn-momo-logo.png")} style={styles.providerImage} resizeMode="contain" accessibilityLabel={`Logo ${provider.name}`} /></View><View style={styles.providerNameBlock}><Text style={styles.providerName}>{provider.name}</Text><Text style={styles.hint}>{configured ? "Clé enregistrée" : "Aucune clé enregistrée"}</Text></View><Feather name={configured ? "check-circle" : "circle"} size={19} color={configured ? "#087C70" : "#A9B8B5"} /></View>
           <TextInput value={providerKeys[provider.key] ?? ""} onChangeText={(value) => { setProviderKeys((current) => ({ ...current, [provider.key]: value })); setProviderSaved(null); setProviderError(""); }} editable={!providerLoading && !providerSaving} secureTextEntry autoCapitalize="none" autoCorrect={false} placeholder={configured ? "Nouvelle clé pour remplacer l’actuelle" : "Clé API du compte Business"} style={styles.input} accessibilityLabel={`Clé API ${provider.name}`} />
-          <View style={styles.providerActions}><Pressable accessibilityRole="button" disabled={providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()} onPress={() => void saveProvider(provider.key)} style={[styles.providerSave, (providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()) && styles.disabled]}><Text style={styles.providerSaveText}>{providerSaving === provider.key ? "Enregistrement…" : configured ? "Remplacer la clé" : "Enregistrer la clé"}</Text></Pressable>{configured ? <Pressable accessibilityRole="button" disabled={!!providerSaving} onPress={() => void removeProvider(provider.key)}><Text style={styles.providerRemove}>Supprimer</Text></Pressable> : null}</View>
+          <View style={styles.providerActions}><Pressable accessibilityRole="button" disabled={providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()} onPress={() => void saveProvider(provider.key)} style={[styles.providerSave, (providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()) && styles.disabled]}><LoadingLabel loading={!!(providerSaving === provider.key)} style={styles.providerSaveText}>{providerSaving === provider.key ? "Enregistrement…" : configured ? "Remplacer la clé" : "Enregistrer la clé"}</LoadingLabel></Pressable>{configured ? <Pressable accessibilityRole="button" disabled={!!providerSaving} onPress={() => void removeProvider(provider.key)}><Text style={styles.providerRemove}>Supprimer</Text></Pressable> : null}</View>
           {providerSaved === provider.key ? <Text style={styles.success}>Clé chiffrée et enregistrée.</Text> : null}
         </View>;
       })}
@@ -217,7 +218,7 @@ export default function FinanceSettings() {
       <Text style={styles.sectionTitle}>Session</Text>
       <Text style={styles.hint}>Fermez votre session sur cet appareil.</Text>
       {signOutError ? <Text style={styles.error} accessibilityRole="alert">{signOutError}</Text> : null}
-      <Pressable accessibilityRole="button" accessibilityLabel="Se déconnecter" disabled={signingOut} onPress={() => void signOut()} style={[styles.signOutButton, signingOut && styles.disabled]}><Feather name="log-out" size={18} color="#B64337" /><Text style={styles.signOutText}>{signingOut ? "Déconnexion…" : "Se déconnecter"}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Se déconnecter" disabled={signingOut} onPress={() => void signOut()} style={[styles.signOutButton, signingOut && styles.disabled]}><Feather name="log-out" size={18} color="#B64337" /><LoadingLabel loading={!!(signingOut)} style={styles.signOutText}>{signingOut ? "Déconnexion…" : "Se déconnecter"}</LoadingLabel></Pressable>
     </View>
   </View></KeyboardSafeScreen>;
 }

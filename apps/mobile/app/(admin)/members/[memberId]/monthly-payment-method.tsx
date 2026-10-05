@@ -1,3 +1,4 @@
+import { LoadingState, LoadingLabel } from "../../../../src/components/loading-state";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ export default function MonthlyPaymentMethod({ memberMonth }: { memberMonth?: st
     <Pressable onPress={() => memberMonth ? router.replace({ pathname: "/monthly/[month]/pay", params: { month: memberMonth } }) : router.replace({ pathname: "/(admin)/members/[memberId]/monthly-payment", params: { memberId, dueId, selectedYear: selectedYear ?? "" } })} accessibilityRole="button" accessibilityLabel="Retour au montant" style={styles.back}><Feather name="arrow-left" size={20} color="#007D74" /><Text style={styles.backText}>Retour</Text></Pressable>
     <Text style={styles.step}>Étape 2 sur 2</Text>
     <Text style={styles.title}>Mode de paiement</Text>
-    {loading ? <Text style={styles.message}>Vérification de la mensualité…</Text> : context ? <>
+    {loading ? <LoadingState label="Vérification de la mensualité…" /> : context ? <>
       <View style={styles.summary}><Text style={styles.member}>{context.memberName}</Text><Text style={styles.month}>Mensualité de {new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(new Date(`${context.month.slice(0, 10)}T00:00:00`))}</Text><Text style={styles.amount}>{money(amount)}</Text><Text style={styles.message}>Reste après ce paiement : {money(Math.max(0, context.amountRemaining - amount))}</Text></View>
       {!amountValid ? <Text style={styles.error}>Ce montant ne peut plus être enregistré. Revenez au choix du montant.</Text> : <>
         <Text style={styles.label}>{memberMonth ? "Comment souhaitez-vous payer ?" : "Comment le paiement a-t-il été reçu ?"}</Text>
@@ -93,7 +94,7 @@ export default function MonthlyPaymentMethod({ memberMonth }: { memberMonth?: st
         <Text style={styles.notice}>{memberMonth ? source === "manual" ? `Présentez-vous auprès de l’administrateur avec ${money(amount)}. Il enregistrera le versement après l’avoir reçu.` : source === "wave" ? `Saisissez ${money(amount)} dans Wave. Le paiement sera enregistré après vérification par l’administrateur.` : "Le paiement sera enregistré après vérification par l’administrateur." : "Vérifiez que le montant a bien été reçu avant de l’enregistrer."}</Text>
       </>}
       {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
-      <Pressable accessibilityRole="button" disabled={!amountValid || !source || saving} onPress={() => void submit()} style={[styles.submit, (!amountValid || !source || saving) && styles.disabled]}><Text style={styles.submitText}>{memberMonth ? source === "wave" ? "Ouvrir Wave" : "Voir la mensualité" : saving ? "Enregistrement…" : "Confirmer le paiement"}</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={!amountValid || !source || saving} onPress={() => void submit()} style={[styles.submit, (!amountValid || !source || saving) && styles.disabled]}><LoadingLabel loading={saving} style={styles.submitText}>{memberMonth ? source === "wave" ? "Ouvrir Wave" : "Voir la mensualité" : saving ? "Enregistrement…" : "Confirmer le paiement"}</LoadingLabel></Pressable>
     </> : <Text style={styles.error}>{error || "Mensualité introuvable."}</Text>}
   </ScrollView>;
 }

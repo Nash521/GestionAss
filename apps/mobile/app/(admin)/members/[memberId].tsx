@@ -1,8 +1,10 @@
+import { LoadingState } from "../../../src/components/loading-state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Animated, ImageBackground, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminHeader } from "../../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../../src/components/use-admin-header-scroll";
 import { AdminMemberDetail, ContributionDue, getAdminMemberDetail, manageAdminMember } from "../../../src/features/members/api";
 import { buildMemberContributionYear, CalendarMonth, isAnnualProgressVisible } from "../../../src/features/members/contribution-year";
 
@@ -13,6 +15,7 @@ const statusLabel = (status: ContributionDue["status"]) => status === "paid" ? "
 const memberStatusLabel = (status: AdminMemberDetail["member"]["memberStatus"]) => ({ active: "Actif", pending_membership: "En attente", suspended: "Suspendu", removed: "Supprimé" })[status];
 
 export default function MemberDetail() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const { memberId, paymentUpdated, selectedYear: selectedYearParam } = useLocalSearchParams<{ memberId: string; paymentUpdated?: string; selectedYear?: string }>();
   const [detail, setDetail] = useState<AdminMemberDetail | null>(null);
   const [loading, setLoading] = useState(typeof memberId === "string");
@@ -77,13 +80,13 @@ export default function MemberDetail() {
     animateChartIfVisible();
   }, [selectedYear, progress, animateChartIfVisible]);
 
-  const body = !validMemberId ? <State message="Membre introuvable." /> : loading ? <State message="Chargement du membre…" /> : error || !detail ? <State message="Impossible de charger ce membre." retry={loadDetail} /> : <MemberContent detail={detail} onReactivate={loadDetail} progress={progress} onChartLayout={handleChartLayout} selectedYear={selectedYear} onChangeYear={setSelectedYear} />;
+  const body = !validMemberId ? <State message="Membre introuvable." /> : loading ? <LoadingState label="Chargement du membre…" /> : error || !detail ? <State message="Impossible de charger ce membre." retry={loadDetail} /> : <MemberContent detail={detail} onReactivate={loadDetail} progress={progress} onChartLayout={handleChartLayout} selectedYear={selectedYear} onChangeYear={setSelectedYear} />;
   return <View style={styles.page}>
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} onScroll={handleScroll} scrollEventThrottle={80} onLayout={({ nativeEvent }) => { viewportHeight.current = nativeEvent.layout.height; animateChartIfVisible(); }}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} onScroll={(event) => { handleScroll(event); handleHeaderScroll(event); }} scrollEventThrottle={16} onLayout={({ nativeEvent }) => { viewportHeight.current = nativeEvent.layout.height; animateChartIfVisible(); }}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
       <Pressable accessibilityRole="button" accessibilityLabel="Retour aux membres" onPress={() => router.replace("/(admin)/members")} style={styles.back}><Feather name="arrow-left" color="#007D74" size={20} /><Text style={styles.backText}>Retour</Text></Pressable>
       {body}
     </View></ImageBackground></ScrollView>
-    <AdminHeader />
+    <AdminHeader translateY={headerTranslateY} />
   </View>;
 }
 

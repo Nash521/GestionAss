@@ -142,7 +142,7 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /Refuser/);
   assert.match(source, /decide-membership-request/);
   assert.match(source, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /paddingBottom: 104/);
 });
@@ -296,10 +296,11 @@ test('the admin dashboard uses protected statistics with labels that match membe
   assert.match(source, /router\.push\("\/\(admin\)\/members"\)/);
   assert.match(source, /router\.push\("\/\(admin\)\/finances"\)/);
   assert.match(chrome, /logo-removebg-preview\.png/);
-  assert.match(source, /Animated\.Value\(0\)/);
-  assert.match(source, /onScroll=\{handleScroll\}/);
-  assert.match(source, /duration:\s*200/);
-  assert.match(source, /toValue:\s*visible \? 0 : -120/);
+  assert.match(source, /useAdminHeaderScroll\(\)/);
+  assert.match(source, /onScroll=\{handleHeaderScroll\}/);
+  const headerScroll = await readFile(new URL("../src/components/use-admin-header-scroll.ts", import.meta.url), "utf8");
+  assert.match(headerScroll, /duration:\s*200/);
+  assert.match(headerScroll, /toValue:\s*next.visible \? 0 : -120/);
 });
 
 test('the dashboard background scrolls with its content and renders membership-fee metrics', async () => {
@@ -356,7 +357,7 @@ test('monthly payment history is a dedicated admin route with pagination', async
   assert.match(source, /MonthlyPaymentCard/);
   assert.match(source, /Charger plus/);
   assert.match(source, /Réessayer/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
 });
 
 test('the member page provides administration, filters, and an entry point to account creation', async () => {
@@ -369,7 +370,7 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(source, /<ImageBackground/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /Rechercher un nom, t\u00e9l\u00e9phone/);
   assert.match(source, /Tous les statuts/);
@@ -474,7 +475,7 @@ test('the member detail route shows adhesion in its identity card, a twelve-mont
   assert.match(source, /accessibilityLabel="Retour aux membres" onPress=\{\(\) => router\.replace\("\/\(admin\)\/members"\)\}/);
   assert.match(source, /ImageBackground/);
   assert.match(source, /ScrollView/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /AdminNavigation/);
   assert.match(source, /Droit d’adhésion validé/);
   assert.doesNotMatch(source, /<Section title="Droit d’adhésion">/);

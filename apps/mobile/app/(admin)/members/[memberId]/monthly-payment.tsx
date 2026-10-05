@@ -1,3 +1,4 @@
+import { LoadingState } from "../../../../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -58,7 +59,7 @@ export default function MonthlyPaymentAmount({ memberMonth }: { memberMonth?: st
   return <ScrollView contentContainerStyle={styles.page}>
     <Pressable onPress={() => memberMonth ? router.replace("/home") : router.replace({ pathname: "/(admin)/members/[memberId]", params: { memberId, selectedYear: selectedYear ?? "" } })} accessibilityRole="button" accessibilityLabel={memberMonth ? "Retour au calendrier" : "Retour à la fiche membre"} style={styles.back}><Feather name="arrow-left" size={20} color="#007D74" /><Text style={styles.backText}>Retour</Text></Pressable>
     <View style={styles.heading}><View style={styles.stepBadge}><Text style={styles.step}>ÉTAPE 1 / 2</Text></View><Text style={styles.title}>Payer une mensualité</Text><Text style={styles.subtitle}>{memberMonth ? "Choisissez le montant que vous souhaitez régler." : "Choisissez le palier correspondant au versement reçu."}</Text></View>
-    {loading ? <Text style={styles.message}>Chargement de la mensualité…</Text> : error ? <Text style={styles.error}>{error}</Text> : context && selection ? <>
+    {loading ? <LoadingState label="Chargement de la mensualité…" /> : error ? <Text style={styles.error}>{error}</Text> : context && selection ? <>
       <View style={styles.hero}>
         <View style={styles.heroCircleLarge} /><View style={styles.heroCircleSmall} />
         <View style={styles.heroTop}><View style={styles.heroIcon}><Feather name="calendar" size={18} color="#D3F8EE" /></View><Text style={styles.heroMonth}>{monthLabel(context.month)}</Text></View>

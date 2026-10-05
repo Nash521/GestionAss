@@ -1,8 +1,10 @@
+import { LoadingState, LoadingLabel } from "../../src/components/loading-state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader } from "../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../src/components/use-admin-header-scroll";
 import { AdminMember, AdminMembersPage, getAdminMembers } from "../../src/features/members/api";
 
 const background = require("../../assets/Fond_ecranMobile.png");
@@ -16,6 +18,7 @@ const roleLabels: Record<RoleFilter, string> = { all: "Tous les rôles", member:
 const statusLabels: Record<MemberStatusFilter, string> = { all: "Tous les statuts", pending_membership: "En attente", active: "Actifs", suspended: "Suspendus", removed: "Supprimés" };
 
 export default function AdminMembers() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const [page, setPage] = useState(emptyPage); const [members, setMembers] = useState<AdminMember[]>([]); const [query, setQuery] = useState("");
   const [memberStatus, setMemberStatus] = useState<MemberStatusFilter>("all"); const [paymentStatus, setPaymentStatus] = useState<PaymentFilter>("all"); const [role, setRole] = useState<RoleFilter>("all");
   const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false); const [error, setError] = useState(false);
@@ -43,15 +46,15 @@ export default function AdminMembers() {
   const filter = <T extends string>(title: string, current: T, change: (value: T) => void, labels: Record<T, string>) => <View style={styles.filterGroup}><Text style={styles.filterLabel}>{title}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{(Object.keys(labels) as T[]).map((value) => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: current === value }} style={[styles.filter, current === value && styles.filterActive]} onPress={() => change(value)}><Text style={[styles.filterText, current === value && styles.filterTextActive]}>{labels[value]}</Text></Pressable>)}</ScrollView></View>;
   const activeFilters = [memberStatus, paymentStatus, role].filter((value) => value !== "all").length;
   return <View style={styles.page}>
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
+    <ScrollView onScroll={handleHeaderScroll} scrollEventThrottle={16} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}><ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
       <Text style={styles.kicker}>Gestion de l’association</Text><Text style={styles.title}>Membres</Text><Text style={styles.subtitle}>Gérez les adhérents, leurs rôles et leurs droits d’adhésion.</Text>
       <View style={styles.stats}><Stat icon="users" value={page.totalMembers} label="Total membres" /><Stat icon="clock" value={page.membersLate} label="Total en retard" /><Stat icon="check-circle" value={page.membersPaid} label="Total à jour" /></View>
       <Pressable style={styles.addButton} onPress={() => router.push("/(admin)/members/new")}><Feather name="user-plus" size={19} color="#FFF" /><Text style={styles.addText}>Ajouter un membre</Text></Pressable>
       <View style={styles.search}><Feather name="search" size={19} color="#65758A" /><TextInput value={query} onChangeText={setQuery} placeholder="Rechercher un nom, téléphone" placeholderTextColor="#8A98A8" style={styles.searchInput} /></View>
       <View style={styles.filtersPanel}><View style={styles.filtersHeading}><View style={styles.filtersTitleRow}><Feather name="sliders" size={17} color="#087C70" /><Text style={styles.filtersTitle}>Filtres</Text>{activeFilters > 0 ? <Text style={styles.activeCount}>{activeFilters}</Text> : null}</View>{activeFilters > 0 ? <Pressable accessibilityRole="button" onPress={() => { setMemberStatus("all"); setPaymentStatus("all"); setRole("all"); }}><Text style={styles.reset}>Effacer</Text></Pressable> : null}</View>{filter("Statut du membre", memberStatus, setMemberStatus, statusLabels)}{filter("Cotisations", paymentStatus, setPaymentStatus, paymentLabels)}{filter("Rôle", role, setRole, roleLabels)}</View>
-      <View style={styles.list}>{loading ? <Text style={styles.message}>Chargement des membres…</Text> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les membres.</Text><Pressable onPress={() => void loadMembers(0)}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : members.length === 0 ? <Text style={styles.message}>Aucun membre ne correspond à votre recherche.</Text> : <>{members.map((member) => <MemberCard key={member.id} member={member} />)}{members.length < page.totalMembers ? <Pressable disabled={loadingMore} style={[styles.more, loadingMore && styles.disabled]} onPress={() => void loadMembers(members.length)}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus"}</Text></Pressable> : null}</>}</View>
+      <View style={styles.list}>{loading ? <LoadingState label="Chargement des membres…" /> : error ? <View style={styles.state}><Text style={styles.message}>Impossible de charger les membres.</Text><Pressable onPress={() => void loadMembers(0)}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : members.length === 0 ? <Text style={styles.message}>Aucun membre ne correspond à votre recherche.</Text> : <>{members.map((member) => <MemberCard key={member.id} member={member} />)}{members.length < page.totalMembers ? <Pressable disabled={loadingMore} style={[styles.more, loadingMore && styles.disabled]} onPress={() => void loadMembers(members.length)}><LoadingLabel loading={!!(loadingMore)} style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus"}</LoadingLabel></Pressable> : null}</>}</View>
     </View></ImageBackground></ScrollView>
-    <AdminHeader />
+    <AdminHeader translateY={headerTranslateY} />
   </View>;
 }
 

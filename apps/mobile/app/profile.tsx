@@ -1,3 +1,4 @@
+import { LoadingState, LoadingLabel } from "../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -63,13 +64,13 @@ export default function Profile() {
       <ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}><View style={styles.content}>
         <Text style={styles.overline}>ESPACE MEMBRE</Text><Text style={styles.title}>Profil</Text><Text style={styles.subtitle}>Vos informations au sein de l’association.</Text>
         {error ? <View style={styles.errorBox}><Text accessibilityRole="alert" style={styles.error}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void reload()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : null}
-        {loading ? <View style={styles.state}><Text style={styles.stateText}>Chargement de votre profil…</Text></View> : profile ? <>
+        {loading ? <View style={styles.state}><LoadingState label="Chargement de votre profil…" /></View> : profile ? <>
           <View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View><Text style={styles.name}>{profile.firstName} {profile.lastName}</Text><Text style={styles.memberNumber}>{profile.memberNumber}</Text><View style={styles.badges}><Text style={styles.badge}>{memberStatus}</Text><Text style={[styles.badge, profile.membershipStatus === "paid" ? styles.paid : profile.membershipStatus === "partial" ? styles.partial : styles.unpaid]}>{membershipStatus}</Text></View></View>
           <View style={styles.section}><Text style={styles.sectionTitle}>Informations personnelles</Text><InfoRow icon="phone" label="Téléphone" value={profile.phone} /><InfoRow icon="calendar" label="Membre depuis le" value={dateLabel(profile.joiningDate)} /><InfoRow icon="users" label="Association" value={profile.organizationName} /></View>
           <View style={styles.section}><Text style={styles.sectionTitle}>Droit d’adhésion</Text><View style={styles.feeRow}><Text style={styles.feeLabel}>Montant réglé</Text><Text style={styles.feeValue}>{money(profile.membershipAmountPaid)}</Text></View><View style={styles.feeRow}><Text style={styles.feeLabel}>Montant dû</Text><Text style={styles.feeValue}>{money(profile.membershipAmountDue)}</Text></View></View>
           <Pressable accessibilityRole="button" onPress={() => router.push("/notifications")} style={styles.notifications}><Feather name="bell" size={19} color="#A46300" /><Text style={styles.notificationsText}>Mes notifications</Text><Feather name="chevron-right" size={19} color="#007D74" /></Pressable>
           {signOutError ? <Text accessibilityRole="alert" style={styles.error}>{signOutError}</Text> : null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Se déconnecter" disabled={signingOut} onPress={() => void signOut()} style={styles.signOut}><Feather name="log-out" size={18} color="#B64337" /><Text style={styles.signOutText}>{signingOut ? "Déconnexion…" : "Se déconnecter"}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Se déconnecter" disabled={signingOut} onPress={() => void signOut()} style={styles.signOut}><Feather name="log-out" size={18} color="#B64337" /><LoadingLabel loading={!!(signingOut)} style={styles.signOutText}>{signingOut ? "Déconnexion…" : "Se déconnecter"}</LoadingLabel></Pressable>
         </> : null}
       </View></ImageBackground>
     </ScrollView>

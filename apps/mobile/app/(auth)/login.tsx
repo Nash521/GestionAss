@@ -1,6 +1,7 @@
+import { LoadingLabel } from "../../src/components/loading-state";
 import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
-import { Link, router } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeScreen } from "../../src/components/keyboard-safe-screen";
 import { canEnableBiometricLogin, enableBiometricLogin, isBiometricLoginEnabled, unlockWithBiometrics } from "../../src/lib/biometric-session";
@@ -11,6 +12,7 @@ const logo = require("../../assets/logo-removebg-preview.png");
 const phonePattern = /^\+2250[157]\d{8}$/;
 
 export default function Login() {
+  const { passwordReset } = useLocalSearchParams<{ passwordReset?: string }>();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -65,6 +67,7 @@ export default function Login() {
         <Image source={logo} style={styles.logo} accessibilityLabel="Logo GestionAss" />
         <Text style={styles.title}>Bienvenue</Text>
         <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
+        {passwordReset === "1" ? <Text style={styles.success}>Mot de passe modifié. Connectez-vous avec le nouveau mot de passe.</Text> : null}
 
         <View style={styles.field}>
           <Feather name="phone" size={18} color="#00A99D" />
@@ -81,7 +84,7 @@ export default function Login() {
         <Link href="/password-reset" style={styles.resetLink}>Mot de passe oublié ?</Link>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Pressable style={[styles.submitButton, loading && styles.disabled]} onPress={submit} disabled={loading} accessibilityRole="button">
-          <Text style={styles.submitLabel}>{loading ? "Connexion…" : "Se connecter"}</Text>
+          <LoadingLabel loading={!!(loading)} style={styles.submitLabel}>{loading ? "Connexion…" : "Se connecter"}</LoadingLabel>
         </Pressable>
         {biometricEnabled ? <Pressable style={styles.biometricButton} onPress={unlock} disabled={loading} accessibilityRole="button"><Feather name="unlock" size={18} color="#00A99D" /><Text style={styles.biometricLabel}>Se connecter avec empreinte</Text></Pressable> : null}
         <View style={styles.divider}><View style={styles.line} /><Text style={styles.or}>ou</Text><View style={styles.line} /></View>
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
   field: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 13, elevation: 2, flexDirection: "row", marginBottom: 6, minHeight: 42, paddingHorizontal: 13, shadowColor: "#6D8792", shadowOpacity: 0.09, shadowRadius: 8 },
   prefix: { borderRightColor: "#D5DEE5", borderRightWidth: 1, color: "#102B3D", fontSize: 14, marginHorizontal: 8, paddingRight: 8 }, input: { color: "#102B3D", flex: 1, fontSize: 14, minHeight: 42 },
   resetLink: { alignSelf: "flex-end", color: "#00A99D", fontSize: 12, marginBottom: 10, marginTop: 2 }, error: { color: "#B3261E", fontSize: 12, marginBottom: 6, textAlign: "center" },
+  success: { backgroundColor: "#EAF7F4", borderRadius: 10, color: "#007D74", fontSize: 12, marginBottom: 8, padding: 10, textAlign: "center" },
   submitButton: { alignItems: "center", backgroundColor: "#00A99D", borderRadius: 14, justifyContent: "center", minHeight: 44 }, disabled: { opacity: 0.6 }, submitLabel: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
   biometricButton: { alignItems: "center", flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 8, minHeight: 32 }, biometricLabel: { color: "#00A99D", fontSize: 13, fontWeight: "700" },
   divider: { alignItems: "center", flexDirection: "row", gap: 12, marginVertical: 12 }, line: { backgroundColor: "#D5DEE5", flex: 1, height: 1 }, or: { color: "#748397", fontSize: 13 },

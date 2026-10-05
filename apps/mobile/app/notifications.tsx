@@ -1,3 +1,4 @@
+import { LoadingState } from "../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -28,16 +29,17 @@ export default function Notifications() {
         setItems((current) => current.map((value) => value.id === item.id ? { ...value, readAt: new Date().toISOString() } : value));
       } catch { setError("Impossible de marquer cette notification comme lue."); return; }
     }
-    if (!item.isMemberRecipient) router.push({ pathname: "/(admin)/members/[memberId]", params: { memberId: item.memberId } });
+    if (item.eventType === "exceptional_created" && item.exceptionalDueId) router.push({ pathname: "/exceptional/[dueId]", params: { dueId: item.exceptionalDueId } });
+    else if (!item.isMemberRecipient) router.push({ pathname: "/(admin)/members/[memberId]", params: { memberId: item.memberId } });
   };
 
   const unread = items.filter((item) => !item.readAt).length;
   return <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void reload()} tintColor="#00A99D" />}>
     <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.canGoBack() ? router.back() : router.replace("/home")} style={styles.back}><Feather name="arrow-left" size={20} color="#007D74" /><Text style={styles.backText}>Retour</Text></Pressable>
     <View style={styles.heading}><View><Text style={styles.title}>Notifications</Text><Text style={styles.subtitle}>{unread ? `${unread} non lue${unread > 1 ? "s" : ""}` : "Vous êtes à jour"}</Text></View><View style={styles.bell}><Feather name="bell" size={23} color="#A46300" /></View></View>
-    <Text style={styles.intro}>Paiements enregistrés pour les mensualités, les cotisations exceptionnelles et les droits d’adhésion.</Text>
+    <Text style={styles.intro}>Nouvelles cotisations exceptionnelles et paiements enregistrés pour vos cotisations.</Text>
     {error ? <View style={styles.errorBox}><Text style={styles.error} accessibilityRole="alert">{error}</Text><Pressable onPress={() => void reload()} accessibilityRole="button"><Text style={styles.retry}>Réessayer</Text></Pressable></View> : null}
-    {loading ? <Text style={styles.empty}>Chargement des notifications…</Text> : items.length === 0 && !error ? <View style={styles.emptyCard}><Feather name="inbox" size={30} color="#8BA6A3" /><Text style={styles.empty}>Aucun paiement à signaler pour le moment.</Text></View> : null}
+    {loading ? <LoadingState label="Chargement des notifications…" /> : items.length === 0 && !error ? <View style={styles.emptyCard}><Feather name="inbox" size={30} color="#8BA6A3" /><Text style={styles.empty}>Aucune notification pour le moment.</Text></View> : null}
     {items.map((item) => {
       const copy = notificationCopy(item, item.isMemberRecipient);
       const icon = item.kind === "membership" ? "award" : item.kind === "exceptional" ? "gift" : "calendar";

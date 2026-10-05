@@ -1,3 +1,4 @@
+import { LoadingState, LoadingLabel } from "../src/components/loading-state";
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -62,9 +63,9 @@ export default function Transactions() {
         <Text style={styles.subtitle}>Tous les paiements enregistrés pour votre compte.</Text>
         <View style={styles.summary}><View style={styles.summaryIcon}><Feather name="credit-card" size={22} color="#007D74" /></View><View><Text style={styles.summaryValue}>{total}</Text><Text style={styles.summaryLabel}>paiement{total > 1 ? "s" : ""} enregistré{total > 1 ? "s" : ""}</Text></View></View>
         {error ? <View style={styles.errorBox}><Text accessibilityRole="alert" style={styles.error}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void reload()}><Text style={styles.retry}>Réessayer</Text></Pressable></View> : null}
-        {loading ? <View style={styles.state}><Text style={styles.stateText}>Chargement de vos transactions…</Text></View> : items.length === 0 && !error ? <View style={styles.state}><Feather name="inbox" size={30} color="#8BA6A3" /><Text style={styles.stateText}>Aucun paiement enregistré pour le moment.</Text></View> : null}
+        {loading ? <View style={styles.state}><LoadingState label="Chargement de vos transactions…" /></View> : items.length === 0 && !error ? <View style={styles.state}><Feather name="inbox" size={30} color="#8BA6A3" /><Text style={styles.stateText}>Aucun paiement enregistré pour le moment.</Text></View> : null}
         {!loading ? <View style={styles.list}>{items.map((item) => <TransactionCard key={item.id} item={item} />)}</View> : null}
-        {!loading && items.length < total ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void loadMore()} style={styles.more}><Text style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus de transactions"}</Text></Pressable> : null}
+        {!loading && items.length < total ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void loadMore()} style={styles.more}><LoadingLabel loading={!!(loadingMore)} style={styles.moreText}>{loadingMore ? "Chargement…" : "Voir plus de transactions"}</LoadingLabel></Pressable> : null}
       </View></ImageBackground>
     </ScrollView>
     <MemberNavigation active="transactions" />
