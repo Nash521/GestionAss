@@ -1,10 +1,21 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/assert@1": "1.0.19",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
     "npm:turbo@^2.3.0": "2.10.7",
-    "npm:typescript@^5.7.0": "5.9.3",
-    "npm:vitest@^2.1.8": "2.1.9",
-    "npm:zod@^3.24.1": "3.25.76"
+    "npm:typescript@^5.7.0": "5.9.3"
+  },
+  "jsr": {
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    }
   },
   "npm": {
     "@0no-co/graphql.web@1.3.3": {
@@ -6080,6 +6091,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:supabase@^2.119.0",
         "npm:turbo@^2.3.0",
         "npm:typescript@^5.7.0"
       ]
@@ -6088,25 +6100,32 @@
       "apps/mobile": {
         "packageJson": {
           "dependencies": [
-            "npm:@expo/metro-runtime@~6.1.2",
+            "npm:@expo/metro-runtime@~57.0.15",
             "npm:@expo/vector-icons@^15.0.3",
             "npm:@hookform/resolvers@^5.5.7",
+            "npm:@react-native-async-storage/async-storage@^2.2.0",
             "npm:@react-native-masked-view/masked-view@0.3.2",
             "npm:@supabase/supabase-js@^2.111.0",
             "npm:@types/node@^26.1.2",
-            "npm:@types/react@^19.1.17",
-            "npm:expo-linking@~8.0.12",
-            "npm:expo-local-authentication@~17.0.8",
-            "npm:expo-router@^6.0.24",
-            "npm:expo-secure-store@~15.0.8",
-            "npm:expo@^54.0.36",
+            "npm:@types/react@^19.2.18",
+            "npm:base64-arraybuffer@^1.0.2",
+            "npm:expo-image-picker@~57.0.20",
+            "npm:expo-linking@~57.0.9",
+            "npm:expo-local-authentication@~57.0.2",
+            "npm:expo-print@~57.0.2",
+            "npm:expo-router@^57.0.20",
+            "npm:expo-secure-store@~57.0.3",
+            "npm:expo-sharing@~57.0.22",
+            "npm:expo@^57.0.21",
+            "npm:react-dom@19.2.3",
             "npm:react-hook-form@^7.83.0",
-            "npm:react-native-gesture-handler@2.28",
+            "npm:react-native-gesture-handler@2.32",
             "npm:react-native-keyboard-aware-scroll-view@~0.9.5",
-            "npm:react-native-safe-area-context@5.6",
-            "npm:react-native-screens@4.16",
-            "npm:react-native@0.81.5",
-            "npm:react@19.1.0",
+            "npm:react-native-safe-area-context@5.7",
+            "npm:react-native-screens@~4.26.2",
+            "npm:react-native-web@~0.21.2",
+            "npm:react-native@0.86.3",
+            "npm:react@19.2.3",
             "npm:zod@^3.24.1"
           ]
         }

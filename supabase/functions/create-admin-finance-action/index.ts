@@ -9,11 +9,14 @@ type Database = { auth: { getUser: (token: string) => Promise<{ data: { user: { 
 type DatabaseFactory = () => Database;
 type Input =
   | { action: "getMonthlySettings" }
+  | { action: "getMonthlyPaymentContext"; memberId: string; dueId: string }
   | { action: "generateMonthly"; month: string }
   | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
+  | { action: "recordMonthlyStepPayment"; memberId: string; dueId: string; amount: number; paidOn: string; reference: string; source: "manual" | "wave" }
   | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
-  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number };
+  | { action: "updateMonthlySettings"; monthlyAmount: number; dueDay: number; maxPayments: number }
+  | { action: "updateContributionSettings"; membershipFeeAmount: number; monthlyAmount: number; dueDay: number; maxPayments: number };
 const exact = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 const validDate = (value: unknown): value is string => typeof value === "string" && date.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
 const nonBlank = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
@@ -23,12 +26,16 @@ const parseInput = (body: unknown): Input | null => {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
   const value = body as Record<string, unknown>;
   if (value.action === "getMonthlySettings" && exact(value, ["action"])) return { action: value.action };
+  if (value.action === "getMonthlyPaymentContext" && exact(value, ["action", "memberId", "dueId"]) && typeof value.memberId === "string" && uuid.test(value.memberId) && typeof value.dueId === "string" && uuid.test(value.dueId)) return value as Input;
   if (value.action === "generateMonthly" && exact(value, ["action", "month"]) && validDate(value.month)) return { action: value.action, month: value.month };
   if (value.action === "createExceptional" && exact(value, ["action", "label", "amount", "dueDate", "targetMemberIds"]) && nonBlank(value.label) && positive(value.amount) && validDate(value.dueDate) && Array.isArray(value.targetMemberIds) && value.targetMemberIds.every((id) => typeof id === "string" && uuid.test(id))) return value as Input;
   if (value.action === "recordPayment" && Object.keys(value).every((key) => ["action", "kind", "dueId", "amount", "paidOn", "reference", "source"].includes(key)) && ["membership", "monthly", "exceptional"].includes(value.kind as string) && typeof value.dueId === "string" && uuid.test(value.dueId) && positive(value.amount) && validDate(value.paidOn) && (value.reference === undefined || typeof value.reference === "string") && ["manual", "wave"].includes(value.source as string)) return value as Input;
+  if (value.action === "recordMonthlyStepPayment" && Object.keys(value).every((key) => ["action", "memberId", "dueId", "amount", "paidOn", "reference", "source"].includes(key)) && typeof value.memberId === "string" && uuid.test(value.memberId) && typeof value.dueId === "string" && uuid.test(value.dueId) && positive(value.amount) && validDate(value.paidOn) && (value.reference === undefined || typeof value.reference === "string") && ["manual", "wave"].includes(value.source as string)) return value as Input;
   if (value.action === "createDisbursement" && exact(value, ["action", "label", "amount", "disbursedOn", "type", "beneficiaryMemberId", "exceptionalContributionId", "justification"]) && nonBlank(value.label) && positive(value.amount) && validDate(value.disbursedOn) && ["general_expense", "member_aid", "exceptional_contribution_payment"].includes(value.type as string) && nullableUuid(value.beneficiaryMemberId) && nullableUuid(value.exceptionalContributionId) && nonBlank(value.justification) && ((value.type === "general_expense" && value.beneficiaryMemberId === null && value.exceptionalContributionId === null) || (value.type === "member_aid" && typeof value.beneficiaryMemberId === "string" && value.exceptionalContributionId === null) || (value.type === "exceptional_contribution_payment" && value.beneficiaryMemberId === null && typeof value.exceptionalContributionId === "string"))) return value as Input;
   const dueDay = value.dueDay;
-  if (value.action === "updateMonthlySettings" && exact(value, ["action", "monthlyAmount", "dueDay"]) && typeof value.monthlyAmount === "number" && Number.isFinite(value.monthlyAmount) && value.monthlyAmount >= 0 && typeof dueDay === "number" && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 28) return value as Input;
+  const maxPayments = value.maxPayments;
+  if (value.action === "updateMonthlySettings" && exact(value, ["action", "monthlyAmount", "dueDay", "maxPayments"]) && typeof value.monthlyAmount === "number" && Number.isFinite(value.monthlyAmount) && value.monthlyAmount >= 0 && typeof dueDay === "number" && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 28 && (maxPayments === 1 || maxPayments === 2)) return value as Input;
+  if (value.action === "updateContributionSettings" && exact(value, ["action", "membershipFeeAmount", "monthlyAmount", "dueDay", "maxPayments"]) && typeof value.membershipFeeAmount === "number" && Number.isInteger(value.membershipFeeAmount) && value.membershipFeeAmount >= 0 && value.membershipFeeAmount <= 9999999999 && typeof value.monthlyAmount === "number" && Number.isInteger(value.monthlyAmount) && value.monthlyAmount >= 0 && value.monthlyAmount <= 9999999999 && typeof dueDay === "number" && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 28 && (maxPayments === 1 || maxPayments === 2)) return value as Input;
   return null;
 };
 const unauthorized = (error: DatabaseError) => error.status === 401 || error.status === 403 || /^unauthorized$/i.test(error.message ?? "");
@@ -37,11 +44,14 @@ const databaseFor = (factory?: DatabaseFactory): Database | null => { if (factor
 const rpcFor = (input: Input, adminId: string): [string, Record<string, unknown>] => {
   switch (input.action) {
     case "getMonthlySettings": return ["get_monthly_contribution_settings", { admin_id: adminId }];
+    case "getMonthlyPaymentContext": return ["get_admin_monthly_payment_context", { admin_id: adminId, target_member_id: input.memberId, target_due_id: input.dueId }];
     case "generateMonthly": return ["generate_monthly_contribution_dues", { admin_id: adminId, month_value: input.month }];
     case "createExceptional": return ["create_exceptional_contribution", { admin_id: adminId, contribution_label: input.label.trim(), contribution_amount: input.amount, contribution_due_date: input.dueDate, selected_member_ids: input.targetMemberIds }];
     case "recordPayment": return ["record_contribution_payment", { admin_id: adminId, due_kind: input.kind, due_id: input.dueId, payment_amount: input.amount, payment_date: input.paidOn, payment_reference_value: input.reference ?? "", payment_source_value: input.source }];
+    case "recordMonthlyStepPayment": return ["record_monthly_step_payment", { admin_id: adminId, target_member_id: input.memberId, target_due_id: input.dueId, payment_amount: input.amount, payment_date: input.paidOn, payment_reference_value: input.reference ?? "", payment_source_value: input.source }];
     case "createDisbursement": return ["create_disbursement", { admin_id: adminId, disbursement_label: input.label.trim(), disbursement_amount: input.amount, disbursement_date: input.disbursedOn, disbursement_type_value: input.type, target_member_id: input.beneficiaryMemberId, target_contribution_id: input.exceptionalContributionId, disbursement_justification: input.justification.trim() }];
-    case "updateMonthlySettings": return ["update_monthly_contribution_settings", { admin_id: adminId, monthly_amount: input.monthlyAmount, due_day: input.dueDay }];
+    case "updateMonthlySettings": return ["update_monthly_contribution_settings", { admin_id: adminId, monthly_amount: input.monthlyAmount, due_day: input.dueDay, max_payments: input.maxPayments }];
+    case "updateContributionSettings": return ["update_admin_contribution_settings", { admin_id: adminId, membership_fee_amount: input.membershipFeeAmount, monthly_amount: input.monthlyAmount, due_day: input.dueDay, max_payments: input.maxPayments }];
   }
 };
 export const createHandler = (databaseFactory?: DatabaseFactory) => async (request: Request): Promise<Response> => {

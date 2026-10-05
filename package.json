@@ -11,8 +11,12 @@
     "quality": "pnpm typecheck && pnpm test && pnpm lint && pnpm test:edge"
   },
   "devDependencies": {
+    "supabase": "^2.119.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"
   },
-  "workspaces": ["apps/*", "packages/*"]
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

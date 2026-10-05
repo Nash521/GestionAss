@@ -21,8 +21,14 @@ Deno.test("create-admin-finance-action validates each action's business fields",
     { action: "generateMonthly", month: "2026-13-01" },
     { action: "createExceptional", label: " ", amount: 1, dueDate: "2026-08-20", targetMemberIds: [] },
     { action: "recordPayment", kind: "monthly", dueId: "invalid", amount: 0, paidOn: "2026-08-20", reference: "", source: "manual" },
+    { action: "recordMonthlyStepPayment", memberId: dueId, dueId, amount: 0, paidOn: "2026-08-20", reference: "", source: "manual" },
     { action: "createDisbursement", label: "Expense", amount: 1, disbursedOn: "2026-08-20", type: "general_expense", beneficiaryMemberId: null, exceptionalContributionId: null, justification: " " },
     { action: "updateMonthlySettings", monthlyAmount: 0, dueDay: 29 },
+    { action: "updateMonthlySettings", monthlyAmount: 1000, dueDay: 5, maxPayments: 0 },
+    { action: "updateContributionSettings", membershipFeeAmount: -1, monthlyAmount: 1000, dueDay: 5, maxPayments: 2 },
+    { action: "updateContributionSettings", membershipFeeAmount: 5000, monthlyAmount: 1000, dueDay: 5, maxPayments: 3 },
+    { action: "updateContributionSettings", membershipFeeAmount: 5000, monthlyAmount: 1000, dueDay: 5, maxPayments: 3, unexpected: true },
+    { action: "getMonthlyPaymentContext", memberId: dueId, dueId: "invalid" },
   ];
   for (const body of invalidBodies) if ((await handler()(request(body))).status !== 400) throw new Error(`expected 400 for ${body.action}`);
 });
@@ -39,16 +45,23 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
   const db = { auth: { getUser: async () => identity }, rpc: async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return { data: "result-id", error: null }; } };
   const inputs = [
     { action: "getMonthlySettings" },
+    { action: "getMonthlyPaymentContext", memberId: dueId, dueId },
     { action: "generateMonthly", month: "2026-08-01" },
     { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId] },
     { action: "recordPayment", kind: "monthly", dueId, amount: 100, paidOn: "2026-08-20", reference: "ref", source: "manual" },
+    { action: "recordMonthlyStepPayment", memberId: dueId, dueId, amount: 500, paidOn: "2026-08-20", reference: "ref", source: "wave" },
     { action: "createDisbursement", label: "Aid", amount: 50, disbursedOn: "2026-08-20", type: "member_aid", beneficiaryMemberId: dueId, exceptionalContributionId: null, justification: "Medical" },
-    { action: "updateMonthlySettings", monthlyAmount: 1000, dueDay: 5 },
+    { action: "updateMonthlySettings", monthlyAmount: 1000, dueDay: 5, maxPayments: 2 },
+    { action: "updateContributionSettings", membershipFeeAmount: 5000, monthlyAmount: 1000, dueDay: 5, maxPayments: 2 },
   ];
   for (const input of inputs) if ((await handler(db)(request(input))).status !== 200) throw new Error(`expected success for ${input.action}`);
   const names = calls.map((call) => call.name).join(",");
-  if (names !== "get_monthly_contribution_settings,generate_monthly_contribution_dues,create_exceptional_contribution,record_contribution_payment,create_disbursement,update_monthly_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
+  if (names !== "get_monthly_contribution_settings,get_admin_monthly_payment_context,generate_monthly_contribution_dues,create_exceptional_contribution,record_contribution_payment,record_monthly_step_payment,create_disbursement,update_monthly_contribution_settings,update_admin_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
   if (calls.some((call) => call.args.admin_id !== identity.data.user.id)) throw new Error("expected authenticated admin id");
+  if (calls[1].args.target_member_id !== dueId || calls[1].args.target_due_id !== dueId) throw new Error("expected selected member and due identifiers");
+  if (calls.at(-1)?.args.max_payments !== 2) throw new Error("expected installment limit in settings update");
+  if (calls.at(-1)?.args.membership_fee_amount !== 5000) throw new Error("expected membership fee in contribution settings update");
+  if (calls[5].args.target_member_id !== dueId || calls[5].args.payment_amount !== 500) throw new Error("expected exact stepped payment payload");
 });
 Deno.test("create-admin-finance-action maps business errors to 400 and outages to safe 503", async () => {
   const business = await handler({ auth: { getUser: async () => identity }, rpc: async () => ({ data: null, error: { message: "Payment exceeds remaining amount" } }) })(request({ action: "generateMonthly", month: "2026-08-01" }));

@@ -14,14 +14,12 @@ async function startResetFunction(mock: { reserve?: MockOutcome; update?: MockOu
     const url = new URL(request.url);
     const rpc = url.pathname.match(/\/rest\/v1\/rpc\/([^/]+)$/);
     if (rpc) {
+      if (rpc[1] === "get_password_reset_account") return Response.json(resetUserId);
       events.push(rpc[1]);
       const outcome = rpc[1] === "reserve_password_reset_otp" ? mock.reserve : rpc[1] === "finalize_password_reset_otp" ? mock.finalize : mock.release;
       if (outcome === "error") return Response.json({ message: "temporary database outage" }, { status: 500 });
       if (rpc[1] === "reserve_password_reset_otp") return Response.json(reservationId);
       return Response.json(outcome === "false" ? false : true);
-    }
-    if (url.pathname === "/rest/v1/membership_requests") {
-      return Response.json([{ user_id: resetUserId, status: "approved", users: { is_active: true } }]);
     }
     if (url.pathname.startsWith(`/auth/v1/admin/users/${resetUserId}`)) {
       events.push(request.method === "PUT" ? "updateUser" : "signOut");

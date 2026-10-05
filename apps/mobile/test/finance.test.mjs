@@ -54,28 +54,24 @@ test("createAdminFinanceAction forwards the exact action payload at runtime", as
   assert.equal(result.id, 3);
 });
 
-test("finance overview exposes tabs, guarded loading, pagination and WhatsApp reminders", () => {
+test("finance overview exposes only exceptional contributions and disbursements", () => {
   const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
-  assert.match(page, /Mensualit/);
-  assert.match(page, /Cotisations\s+exceptionnelles/);
+  assert.match(page, /COTISATIONS EXCEPTIONNELLES/);
   assert.match(page, /D\xE9caissements/);
-  assert.match(page, /requestSequence/);
+  assert.match(page, /sequence/);
   assert.match(page, /getAdminFinance/);
-  assert.match(page, /MonthlyPaymentCard/);
+  assert.doesNotMatch(page, /MonthlyPaymentCard|MONTHLY_PREVIEW_SIZE|monthly-transactions|key:\s*"monthly"|setTab<FinanceTab>\("monthly"\)/);
   assert.match(page, /router\.push/);
-  assert.match(page, /totalPaid/);
-  assert.match(page, /totalExpected/);
+  assert.match(page, /totalCollected/);
   assert.match(page, /totalDisbursed/);
-  assert.match(page, /memberId/);
-  assert.match(page, /icon:\s*"calendar"/);
-  assert.match(page, /icon:\s*"gift"/);
-  assert.match(page, /icon:\s*"external-link"/);
-  assert.match(page, /tabText:[^}]*fontSize:\s*10/);
-  assert.match(page, /backgroundColor:\s*"#FFF"/);
+  assert.match(page, /name="gift"/);
+  assert.match(page, /name="arrow-up-right"/);
+  assert.match(page, /tabText:[^}]*fontSize:\s*12/);
+  assert.match(page, /backgroundColor:\s*"#075E58"/);
   assert.match(page, /borderRadius:\s*\d+/);
-  assert.match(page, /activeTab[\s\S]*backgroundColor:\s*"#00A99D"/);
+  assert.match(page, /tabActive:[^}]*backgroundColor:\s*"#075E58"/);
   assert.match(page, /flex:\s*1/);
-  assert.match(page, /minWidth:\s*0/);
+  assert.match(page, /maxWidth:\s*800/);
   assert.doesNotMatch(page, /horizontal/);
 });
 
@@ -85,13 +81,11 @@ test("finance overview never renders items loaded for a different selected tab",
   assert.match(page, /loadedTab\s*!==\s*tab/);
 });
 
-test("monthly overview shows six payment transactions and links to the full history", () => {
+test("monthly history remains a separate route but is absent from the finance overview", () => {
   const page = fs.readFileSync(new URL("../app/(admin)/finances.tsx", import.meta.url), "utf8");
-  assert.match(page, /MONTHLY_PREVIEW_SIZE\s*=\s*6/);
-  assert.match(page, /Voir toutes les transactions/);
-  assert.match(page, /monthly-transactions/);
-  assert.match(page, /metadata\.total\s*>\s*MONTHLY_PREVIEW_SIZE/);
-  assert.match(page, /MonthlyPaymentCard/);
+  const history = fs.readFileSync(new URL("../app/(admin)/finances/monthly-transactions.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /Mensualit|monthly-transactions|MonthlyPaymentCard/);
+  assert.match(history, /MonthlyPaymentCard/);
 });
 
 test("monthly payment card keeps the list compact and opens payment details on tap", () => {
@@ -117,23 +111,19 @@ test("admin navigation routes finance instead of showing a placeholder", () => {
   assert.match(chrome, /router\.push\("\/\(admin\)\/finances"\)/);
 });
 
-test("finance forms expose contextual fields and settings route", () => {
+test("finance forms separate exceptional contributions from disbursements", () => {
   const form = fs.readFileSync(new URL("../app/(admin)/finances/new.tsx", import.meta.url), "utf8");
-  assert.match(form, /exceptional/); assert.match(form, /payment/); assert.match(form, /disbursement/);
-  for (const field of ["justification", "targetMemberIds", "dueId", "reference", "beneficiaryMemberId", "exceptionalContributionId"]) assert.match(form, new RegExp(field));
+  for (const field of ["createExceptional", "createDisbursement", "justification", "beneficiaryMemberId", "exceptionalContributionId"]) assert.match(form, new RegExp(field));
+  assert.match(form, /targetMemberIds: \[\]/);
+  for (const removed of ["Générer les mensualités", "Type de cotisation", "Sélectionner un membre", "Membres ciblés"]) assert.doesNotMatch(form, new RegExp(removed));
   assert.match(fs.readFileSync(new URL("../app/(admin)/settings/finance.tsx", import.meta.url), "utf8"), /dueDay/);
 });
 
-test("payment form supports every due kind and does not force monthly payments", () => {
+test("exceptional contribution form targets all active members", () => {
   const form = fs.readFileSync(new URL("../app/(admin)/finances/new.tsx", import.meta.url), "utf8");
-  assert.match(form, /type PaymentKind = "membership" \| "monthly" \| "exceptional"/);
-  assert.match(form, /kind: paymentKind/);
-  assert.match(form, /Adhésion/);
-  assert.match(form, /Mensualité/);
-  assert.match(form, /Exceptionnelle/);
-  assert.doesNotMatch(form, /kind:\s*"monthly"\s+as const/);
-  assert.match(form, /kind === "payment" && !dueId\.trim\(\)/);
-  assert.match(form, /\(kind === "exceptional" \|\| kind === "disbursement"\) && !label\.trim\(\)/);
+  assert.match(form, /targetMemberIds: \[\]/);
+  assert.match(form, /La cotisation sera créée pour tous les membres actifs/);
+  assert.doesNotMatch(form, /generateMonthly/);
 });
 
 test("finance settings loads existing values before enabling save", () => {
@@ -146,4 +136,6 @@ test("finance settings loads existing values before enabling save", () => {
   assert.match(settings, /getMonthlyContributionSettings/);
   assert.match(settings, /useEffect/);
   assert.match(settings, /loading/);
+  assert.match(settings, /Nombre maximal de versements/);
+  assert.match(settings, /maxPayments: limit/);
 });
