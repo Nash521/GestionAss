@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm --filter mobile exec expo export --platform web"
+  publish = "apps/mobile/dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

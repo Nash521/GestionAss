@@ -12,4 +12,6 @@ Cette validation à deux administrateurs réduit le risque d'une session adminis
 
 Ouvrir le lien ne prouve pas que le paiement a abouti. La comptabilité reste mise à jour par l'administrateur après vérification du paiement reçu. Les anciennes tables et fonctions de clés API sont conservées pour que cette branche reste compatible avec le schéma issu de la PR #5, mais leur configuration n'est plus proposée dans l'interface.
 
+La page Finances → Comptes marchands Wave permet de tenir un registre manuel séparé pour le compte actuel et les anciens comptes. Les administrateurs saisissent un solde initial et des mouvements référencés, puis comparent le solde calculé au relevé Wave. Une écriture est immuable ; une erreur se corrige par une écriture inverse. Le registre ne récupère pas le solde réel et n'attribue pas automatiquement les anciennes cotisations à un marchand, car cette attribution serait incertaine après un changement de compte.
+
 Appliquer les migrations `202610120001_wave_payment_links.sql` à `202610120004_wave_merchant_rotation.sql` avant de tester cette variante. Aucun lien réel, identifiant marchand ou secret n'est ajouté au dépôt.

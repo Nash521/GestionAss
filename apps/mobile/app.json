@@ -10,6 +10,7 @@
       "expo-secure-store"
     ],
     "android": {
+      "package": "com.gestionass.test",
       "softwareKeyboardLayoutMode": "resize"
     }
   }
