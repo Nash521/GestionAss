@@ -12,6 +12,12 @@
     "android": {
       "package": "com.gestionass.test",
       "softwareKeyboardLayoutMode": "resize"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1e9f4622-8ce7-4f1d-88ae-ee3befd84d67"
+      }
+    },
+    "owner": "nash521"
   }
 }
