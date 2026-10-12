@@ -8,7 +8,7 @@ import { KeyboardSafeScreen } from "../../../src/components/keyboard-safe-screen
 import { clearBiometricLogin } from "../../../src/lib/biometric-session";
 import { getAssociationLogoUrl, getAssociationSettings, saveAssociationSettings, uploadAssociationLogo } from "../../../src/features/admin-configuration/api";
 import { validateAssociationSettings, type AssociationSettings } from "../../../src/features/admin-configuration/association";
-import { normalizeWavePaymentLink, wavePaymentLinkAmount } from "../../../src/features/admin-configuration/wave";
+import { normalizeWavePaymentLink, waveMerchantId, wavePaymentLinkAmount } from "../../../src/features/admin-configuration/wave";
 import { getAdminWaveMonthlyLinks, updateAdminWaveMonthlyLinks } from "../../../src/features/admin-configuration/wave-api";
 import { createAdminFinanceAction, getFunctionErrorMessage, getMonthlyContributionSettings } from "../../../src/lib/supabase";
 import { getSupabaseClient } from "../../../src/lib/supabase-client";
@@ -33,6 +33,7 @@ export default function FinanceSettings() {
   const [loading, setLoading] = useState(true);
   const [waveFullUrl, setWaveFullUrl] = useState("");
   const [waveHalfUrl, setWaveHalfUrl] = useState("");
+  const [waveMerchant, setWaveMerchant] = useState<string | null>(null);
   const [waveLoading, setWaveLoading] = useState(true);
   const [waveSaving, setWaveSaving] = useState(false);
   const [waveError, setWaveError] = useState("");
@@ -62,7 +63,7 @@ export default function FinanceSettings() {
       setMaxPayments(String(id.maxPayments));
     }).catch(() => { if (active) setError("Impossible de charger les paramètres des cotisations."); })
       .finally(() => { if (active) setLoading(false); });
-    void getAdminWaveMonthlyLinks().then((links) => { if (active) { setWaveFullUrl(links.fullUrl ?? ""); setWaveHalfUrl(links.halfUrl ?? ""); } })
+    void getAdminWaveMonthlyLinks().then((links) => { if (active) { setWaveFullUrl(links.fullUrl ?? ""); setWaveHalfUrl(links.halfUrl ?? ""); setWaveMerchant(links.merchantId ?? null); } })
       .catch(() => { if (active) setWaveError("Impossible de charger les liens Wave."); })
       .finally(() => { if (active) setWaveLoading(false); });
     return () => { active = false; };
@@ -127,12 +128,13 @@ export default function FinanceSettings() {
     try { fullUrl = normalizeWavePaymentLink(waveFullUrl); halfUrl = normalizeWavePaymentLink(waveHalfUrl); }
     catch (reason) { setWaveError(reason instanceof Error ? reason.message : "Lien Wave invalide."); return; }
     if (!fullUrl) { setWaveError("Ajoutez le lien Wave pour la mensualité complète."); return; }
+    if (waveMerchant && waveMerchantId(fullUrl) !== waveMerchant || halfUrl && waveMerchantId(halfUrl) !== waveMerchantId(fullUrl)) { setWaveError("Tous les liens doivent appartenir au même marchand Wave de l’association."); return; }
     if (wavePaymentLinkAmount(fullUrl) !== Number(monthlyAmount)) { setWaveError(`Le lien de mensualité complète doit indiquer amount=${monthlyAmount}.`); return; }
     if (maxPayments === "2" && !halfUrl) { setWaveError("Ajoutez aussi le lien Wave pour la moitié de la mensualité."); return; }
     if (maxPayments === "2" && Number(monthlyAmount) % 2 !== 0) { setWaveError("Le montant mensuel doit être pair pour deux versements Wave égaux."); return; }
     if (halfUrl && wavePaymentLinkAmount(halfUrl) !== Number(monthlyAmount) / 2) { setWaveError(`Le lien de demi-mensualité doit indiquer amount=${Number(monthlyAmount) / 2}.`); return; }
     setWaveSaving(true); setWaveError(""); setWaveSaved(false);
-    try { await updateAdminWaveMonthlyLinks({ fullUrl, halfUrl }); setWaveSaved(true); }
+    try { const links = await updateAdminWaveMonthlyLinks({ fullUrl, halfUrl }); setWaveMerchant(links.merchantId ?? waveMerchantId(fullUrl)); setWaveSaved(true); }
     catch (reason) { setWaveError((await getFunctionErrorMessage(reason)) ?? "Impossible d’enregistrer les liens Wave."); }
     finally { setWaveSaving(false); }
   };
@@ -186,6 +188,7 @@ export default function FinanceSettings() {
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Paiements Wave</Text>
       <Text style={styles.hint}>Créez dans Wave Business deux liens au montant fixe : {monthlyAmount || "—"} XOF pour une mensualité complète et {Number(monthlyAmount) / 2 || "—"} XOF pour la moitié. Collez-les ici pour les membres de cette association.</Text>
+      <Text style={styles.hint}>{waveMerchant ? `Marchand Wave verrouillé : ${waveMerchant}. Les nouveaux liens doivent provenir de ce même compte.` : "Le premier lien enregistré fixe le marchand Wave de l’association. Vérifiez son bénéficiaire dans Wave avant l’enregistrement."}</Text>
       {waveLoading ? <LoadingState label="Chargement des liens…" /> : null}
       <Text style={styles.label}>Lien mensualité complète</Text><TextInput value={waveFullUrl} onChangeText={(value) => { setWaveFullUrl(value); setWaveSaved(false); }} editable={!waveLoading && !waveSaving} autoCapitalize="none" autoCorrect={false} placeholder="https://pay.wave.com/m/…" style={styles.input} accessibilityLabel="Lien Wave mensualité complète" />
       <Text style={styles.label}>Lien demi-mensualité</Text><TextInput value={waveHalfUrl} onChangeText={(value) => { setWaveHalfUrl(value); setWaveSaved(false); }} editable={!waveLoading && !waveSaving} autoCapitalize="none" autoCorrect={false} placeholder="https://pay.wave.com/m/…" style={styles.input} accessibilityLabel="Lien Wave demi-mensualité" />

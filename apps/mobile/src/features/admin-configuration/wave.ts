@@ -18,7 +18,13 @@ export function wavePaymentLinkAmount(value: string): number | null {
   return amount ? Number(amount) : null;
 }
 
-export type WaveMonthlyLinks = { fullUrl: string | null; halfUrl: string | null };
+export function waveMerchantId(value: string): string | null {
+  const url = normalizeWavePaymentLink(value);
+  if (!url) return null;
+  return new URL(url).pathname.match(/^\/(?:m|mqr)\/([^/]+)/)?.[1] ?? null;
+}
+
+export type WaveMonthlyLinks = { fullUrl: string | null; halfUrl: string | null; merchantId?: string | null };
 
 export function monthlyWaveLinkForPayment(links: WaveMonthlyLinks, amountDue: number, amountPaid: number, amount: number): string | null {
   if (!Number.isInteger(amount) || amount <= 0 || amount > amountDue - amountPaid) return null;
