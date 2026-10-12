@@ -28,14 +28,9 @@ const runtimeFromEnvironment: RuntimeFactory = () => {
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
   return {
     isEligibleAccount: async (phone) => {
-      const { data: membership, error } = await database
-        .from("membership_requests")
-        .select("status,user_id,users!inner(is_active)")
-        .eq("phone", phone)
-        .maybeSingle();
+      const { data: userId, error } = await database.rpc("get_password_reset_account", { p_phone: phone });
       if (error) throw error;
-      const account = Array.isArray(membership?.users) ? membership.users[0] : membership?.users;
-      return membership?.status === "approved" && account?.is_active === true;
+      return typeof userId === "string";
     },
     reserveOtp: async (phone, codeHash) => {
       const { data, error } = await database.rpc("issue_registration_otp", {

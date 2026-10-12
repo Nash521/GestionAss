@@ -1,3 +1,4 @@
+import { LoadingLabel } from "../../src/components/loading-state";
 import { useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -155,7 +156,7 @@ export default function VerifyPhone() {
             disabled={verifying}
             accessibilityRole="button"
           >
-            <Text style={styles.verifyLabel}>{verifying ? "Vérification…" : "Vérifier le code"}</Text>
+            <LoadingLabel loading={!!(verifying)} style={styles.verifyLabel}>{verifying ? "Vérification…" : "Vérifier le code"}</LoadingLabel>
           </Pressable>
 
           <Text style={styles.resendHint}>
@@ -167,9 +168,7 @@ export default function VerifyPhone() {
             disabled={!canResend}
             accessibilityRole="button"
           >
-            <Text style={[styles.resendLabel, !canResend && styles.resendLabelDisabled]}>
-              {resending ? "Envoi…" : "Renvoyer le code maintenant"}
-            </Text>
+            <LoadingLabel loading={!!(resending)} style={[styles.resendLabel, !canResend && styles.resendLabelDisabled]}>{resending ? "Envoi…" : "Renvoyer le code maintenant"}</LoadingLabel>
           </Pressable>
 
           <Pressable style={styles.backButton} onPress={returnToSignUp} accessibilityRole="button">

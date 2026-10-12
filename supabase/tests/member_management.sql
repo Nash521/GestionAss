@@ -1,6 +1,6 @@
 begin;
 
-select plan(62);
+select plan(63);
 
 select has_function('public', 'provision_admin_member', array['uuid', 'uuid', 'text', 'text', 'text', 'public.account_role'], 'admin member provisioning RPC exists');
 select has_function('public', 'list_admin_members', array['uuid', 'text', 'text', 'text', 'text', 'integer', 'integer'], 'admin member listing RPC exists');
@@ -22,6 +22,7 @@ values
 insert into public.organizations (id, name, membership_fee_amount) values
   ('42000000-0000-0000-0000-000000000001', 'Organisation membres une', 1000),
   ('42000000-0000-0000-0000-000000000002', 'Organisation membres deux', 1500);
+update public.organizations set monthly_contribution_amount = 500 where id = '42000000-0000-0000-0000-000000000001';
 
 insert into public.users (id, organization_id, role, is_active) values
   ('41000000-0000-0000-0000-000000000001', '42000000-0000-0000-0000-000000000001', 'admin', true),
@@ -45,7 +46,7 @@ insert into public.membership_fees (member_id, amount_due, amount_paid, remainin
 select is((select count(*) from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50)), 3::bigint, 'listing is isolated to the caller organization and includes members without fees');
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'listing total counts only paid memberships');
 select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 0::bigint, 'listing late count uses overdue monthly dues');
-select is((select members_paid from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 0::bigint, 'listing does not count members without generated dues as current');
+select is((select members_paid from public.list_admin_members('41000000-0000-0000-0000-000000000001', '', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'paid member without overdue monthly dues is current');
 select is((select member_status from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50)), 'active'::public.member_status, 'listing returns each member status');
 select is((select total_members from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50) limit 1), 1::bigint, 'filtered rows retain organization-wide total');
 select is((select members_late from public.list_admin_members('41000000-0000-0000-0000-000000000001', 'awa', 'all', 'all', 'all', 0, 50) limit 1), 0::bigint, 'filtered rows retain organization-wide late count');
@@ -130,9 +131,10 @@ select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001'
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'count')::integer, 1, 'member detail excludes general disbursements from member aid count');
 select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'aid'->>'totalReceived')::numeric, 250::numeric, 'member detail reports received aid total');
 select is(jsonb_array_length(public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'chart'), 6, 'member detail chart contains exactly six months');
+select is((public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->>'annualMonthlyGoal')::numeric, 6000::numeric, 'annual goal uses twelve monthly rates from the organization');
 select ok(
-  public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000004')->'membershipFee' @> '{"amountDue": 0, "amountPaid": 0, "amountRemaining": 0, "status": "paid"}'::jsonb,
-  'member detail returns a zero-safe membership fee when no row exists'
+  public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000004')->'membershipFee' @> '{"amountDue": 1000, "amountPaid": 0, "amountRemaining": 1000, "status": "unpaid"}'::jsonb,
+  'member detail treats a missing membership fee as unvalidated'
 );
 select ok(
   public.get_admin_member_detail('41000000-0000-0000-0000-000000000001', '43000000-0000-0000-0000-000000000001')->'member' @> '{"memberStatus": "active", "paymentStatus": "paid", "amountRemaining": 0}'::jsonb,

@@ -142,15 +142,19 @@ test('the admin request page exposes approval and rejection actions', async () =
   assert.match(source, /Refuser/);
   assert.match(source, /decide-membership-request/);
   assert.match(source, /import \{ AdminHeader \} from "\.\.\/\.\.\/src\/components\/admin-chrome"/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /paddingBottom: 104/);
 });
 
-test('the home screen exposes the admin request route only after checking the account role', async () => {
+test('the home screen loads only the signed-in member dashboard and redirects admins', async () => {
   const source = await readFile(new URL('../app/home.tsx', import.meta.url), 'utf8');
   assert.match(source, /getSessionDestination/);
-  assert.match(source, /membership-requests/);
+  assert.match(source, /getMyMemberDashboard/);
+  assert.match(source, /buildMemberDashboard/);
+  assert.match(source, /router\.replace\("\/\(admin\)\/dashboard"\)/);
+  for (const label of ['Total payé', 'Total dû', 'Mois payés', 'Cotisations exceptionnelles payées', 'Mois non soldés']) assert.match(source, new RegExp(label));
+  assert.match(source, /<MemberNavigation active="home" \/>/);
 });
 
 test('the sign-up screen requires matching passwords before the OTP navigation', async () => {
@@ -279,18 +283,24 @@ test('the admin dashboard uses protected statistics with labels that match membe
   assert.match(source, /Total à jour/);
   assert.match(source, /Total en retard/);
   assert.match(source, /Total mensualités impayées/);
+  assert.doesNotMatch(source, /Cotisations exceptionnelles impayées/);
   assert.match(source, /Total caisse/);
   assert.match(source, /Total dépense/);
   assert.match(source, /Graphique évolution des cotisations/);
+  assert.match(source, /data\.contributionChart/);
+  assert.doesNotMatch(source, /Graphique détaillé bientôt disponible/);
   assert.match(source, /Dernières transactions/);
+  assert.match(source, /data\.recentTransactions/);
+  assert.doesNotMatch(source, /Aperçu des transactions/);
   assert.match(source, /membership-requests/);
   assert.match(source, /router\.push\("\/\(admin\)\/members"\)/);
   assert.match(source, /router\.push\("\/\(admin\)\/finances"\)/);
   assert.match(chrome, /logo-removebg-preview\.png/);
-  assert.match(source, /Animated\.Value\(0\)/);
-  assert.match(source, /onScroll=\{handleScroll\}/);
-  assert.match(source, /duration:\s*200/);
-  assert.match(source, /toValue:\s*visible \? 0 : -120/);
+  assert.match(source, /useAdminHeaderScroll\(\)/);
+  assert.match(source, /onScroll=\{handleHeaderScroll\}/);
+  const headerScroll = await readFile(new URL("../src/components/use-admin-header-scroll.ts", import.meta.url), "utf8");
+  assert.match(headerScroll, /duration:\s*200/);
+  assert.match(headerScroll, /toValue:\s*next.visible \? 0 : -120/);
 });
 
 test('the dashboard background scrolls with its content and renders membership-fee metrics', async () => {
@@ -304,6 +314,18 @@ test('the dashboard background scrolls with its content and renders membership-f
   assert.match(source, /money\(data\.totalExpenses\)/);
 });
 
+test('the dashboard refreshes its figures when the page regains focus', async () => {
+  const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  assert.match(source, /useFocusEffect\(/);
+  assert.match(source, /void loadDashboard\(\)/);
+});
+
+test('the dashboard returns to login when its saved session is rejected', async () => {
+  const source = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
+  assert.match(source, /status === 401/);
+  assert.match(source, /router\.replace\("\/login"\)/);
+});
+
 test('the admin dashboard composes shared animated chrome with literal section routes', async () => {
   const dashboard = await readFile(new URL('../app/(admin)/dashboard.tsx', import.meta.url), 'utf8');
   const chrome = await readFile(new URL('../src/components/admin-chrome.tsx', import.meta.url), 'utf8');
@@ -313,7 +335,7 @@ test('the admin dashboard composes shared animated chrome with literal section r
   assert.doesNotMatch(dashboard, /<AdminNavigation/);
   assert.match(chrome, /export type AdminSection = "dashboard" \| "members" \| "finances"/);
   assert.match(chrome, /translateY \? Animated\.View : View/);
-  assert.match(chrome, /Alert\.alert\("Bientôt disponible", "Cette fonctionnalité arrive prochainement\."\)/);
+  assert.match(chrome, /router\.push\("\/notifications"\)/);
   assert.match(chrome, /active === section \? "#00A99D" : "#65758A"/);
   assert.match(chrome, /router\.replace\("\/\(admin\)\/dashboard"\)/);
   assert.match(chrome, /router\.push\("\/\(admin\)\/members"\)/);
@@ -335,7 +357,7 @@ test('monthly payment history is a dedicated admin route with pagination', async
   assert.match(source, /MonthlyPaymentCard/);
   assert.match(source, /Charger plus/);
   assert.match(source, /Réessayer/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
 });
 
 test('the member page provides administration, filters, and an entry point to account creation', async () => {
@@ -348,7 +370,7 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(source, /<ImageBackground/);
   assert.match(source, /Fond_ecranMobile\.png/);
   assert.match(source, /<ScrollView/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /<AdminNavigation/);
   assert.match(source, /Rechercher un nom, t\u00e9l\u00e9phone/);
   assert.match(source, /Tous les statuts/);
@@ -395,12 +417,12 @@ test('the member page provides administration, filters, and an entry point to ac
   assert.match(supabase, /supabase-client/);
 });
 
-test('the member filters wrap into visible rows on narrow screens', async () => {
+test('the member filters are grouped in horizontally scrollable rows', async () => {
   const source = await readFile(new URL('../app/(admin)/members.tsx', import.meta.url), 'utf8');
 
-  assert.match(source, /<View style=\{styles\.filterRow\}>/);
-  assert.match(source, /filterRow:\s*\{[^}]*flexWrap:\s*"wrap"/);
-  assert.doesNotMatch(source, /<ScrollView\s+horizontal[^>]*contentContainerStyle=\{styles\.filterRow\}/);
+  assert.match(source, /<ScrollView\s+horizontal[^>]*contentContainerStyle=\{styles\.filterRow\}/);
+  assert.match(source, /Statut du membre/);
+  assert.match(source, /Effacer/);
 });
 
 test('the login screen prefixes local Ivorian phone numbers before signing in', async () => {
@@ -445,26 +467,27 @@ test('the member list exposes a typed detail client and opens the selected membe
   assert.match(source, /router\.push\(\{ pathname: "\/\(admin\)\/members\/\[memberId\]", params: \{ memberId: member\.id \} \}\)/);
 });
 
-test('the member detail route renders contributions, aid, and an accessible native chart', async () => {
+test('the member detail route shows adhesion in its identity card, a twelve-month calendar and animated annual progress', async () => {
   const source = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
 
   assert.match(source, /useLocalSearchParams/);
   assert.match(source, /getAdminMemberDetail/);
-  assert.match(source, /router\.back\(\)/);
+  assert.match(source, /accessibilityLabel="Retour aux membres" onPress=\{\(\) => router\.replace\("\/\(admin\)\/members"\)\}/);
   assert.match(source, /ImageBackground/);
   assert.match(source, /ScrollView/);
-  assert.match(source, /<AdminHeader \/>/);
+  assert.match(source, /<AdminHeader translateY=\{headerTranslateY\} \/>/);
   assert.doesNotMatch(source, /AdminNavigation/);
-  assert.match(source, /Droit d’adhésion/);
+  assert.match(source, /Droit d’adhésion validé/);
+  assert.doesNotMatch(source, /<Section title="Droit d’adhésion">/);
   assert.match(source, /Calendrier des cotisations/);
   assert.match(source, /Cotisations exceptionnelles/);
   assert.match(source, /Aides reçues/);
-  assert.match(source, /Total cotisé/);
-  assert.match(source, /Mensualités à payer/);
-  assert.match(source, /Exceptionnelles à payer/);
+  assert.doesNotMatch(source, /<Section title="Total cotisé">/);
+  assert.match(source, /buildMemberContributionYear/);
+  assert.match(source, /Animated\.timing/);
   assert.match(source, /Administrateur/);
   assert.match(source, /Supprimé/);
-  assert.match(source, /Graphique payé et non payé : \$\{paid\} payés, \$\{unpaid\} impayés/);
+  assert.match(source, /Objectif annuel/);
   assert.match(source, /accessible=\{true\}/);
   assert.match(source, /useRef\(0\)/, 'detail requests use a sequence guard');
   assert.match(source, /requestId !== requestSequence\.current/, 'stale detail responses are ignored');
@@ -473,6 +496,34 @@ test('the member detail route renders contributions, aid, and an accessible nati
   assert.match(source, /Aucune aide reçue\./);
   assert.match(source, /Membre introuvable\./);
   assert.match(source, /paddingBottom: 108/);
+});
+
+test('the member contribution calendar can navigate years and update annual progress', async () => {
+  const source = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /accessibilityLabel="Année précédente"/);
+  assert.match(source, /accessibilityLabel="Année suivante"/);
+  assert.match(source, /setSelectedYear/);
+  assert.match(source, /buildMemberContributionYear\(monthlyDues,[\s\S]*?selectedYear, today\)/);
+  assert.match(source, /<AnnualProgress[^>]*year=\{selectedYear\}/);
+  assert.match(source, /Revenir à \{currentYear\}/);
+});
+
+test('the member calendar opens the two-step monthly payment route only for an open due', async () => {
+  const detail = await readFile(new URL('../app/(admin)/members/[memberId].tsx', import.meta.url), 'utf8');
+  const amount = await readFile(new URL('../app/(admin)/members/[memberId]/monthly-payment.tsx', import.meta.url), 'utf8');
+  const method = await readFile(new URL('../app/(admin)/members/[memberId]/monthly-payment-method.tsx', import.meta.url), 'utf8');
+
+  assert.match(detail, /month\.due && month\.due\.amountRemaining > 0/);
+  assert.match(detail, /monthly-payment/);
+  assert.match(amount, /getMonthlyPaymentContext/);
+  assert.match(amount, /selection\.markers\.map/);
+  assert.doesNotMatch(amount, /onResponderMove|Diminuer le montant|Augmenter le montant/);
+  assert.match(amount, /monthly-payment-method/);
+  assert.match(method, /createAdminFinanceAction/);
+  assert.match(method, /recordMonthlyStepPayment/);
+  assert.match(method, /"wave"/);
+  assert.match(method, /"manual"/);
 });
 
 test('the member administration keeps edits and manual reactivation but no direct sanctions', async () => {
@@ -509,11 +560,8 @@ test('disciplinary route lists cases, opens investigations, and decides only ope
   assert.match(detail, /members\/\[memberId\]\/disciplinary/);
 });
 
-test('the manual payment form selects a member and loads open dues', async () => {
+test('the exceptional contribution form has no member selection', async () => {
   const source = await readFile(new URL('../app/(admin)/finances/new.tsx', import.meta.url), 'utf8');
-  const client = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
-  assert.match(source, /getMemberOpenDues/);
-  assert.match(source, /Sélectionner un membre/);
-  assert.match(source, /amountRemaining/);
-  assert.match(client, /getMemberOpenDues/);
+  assert.match(source, /targetMemberIds: \[\]/);
+  assert.doesNotMatch(source, /getMemberOpenDues|Sélectionner un membre|Générer les mensualités/);
 });

@@ -25,6 +25,7 @@ export type ContributionDue = {
 export type AidDisbursement = { id: string; label: string; amount: number; disbursedOn: string };
 export type MemberChartPoint = { month: string; paid: number; unpaid: number };
 export type AdminMemberDetail = {
+  annualMonthlyGoal: number;
   member: AdminMember & { memberNumber: string; joiningDate: string };
   membershipFee: { amountDue: number; amountPaid: number; amountRemaining: number; status: "paid" | "partial" | "unpaid" };
   monthlyDues: ContributionDue[];

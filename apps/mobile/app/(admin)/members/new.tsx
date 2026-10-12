@@ -1,3 +1,4 @@
+import { LoadingLabel } from "../../../src/components/loading-state";
 import { useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -66,7 +67,7 @@ export default function NewAdminMember() {
             <Field icon="lock"><TextInput value={passwordConfirmation} onChangeText={setPasswordConfirmation} placeholder="Confirmation du mot de passe" placeholderTextColor="#788798" style={styles.input} editable={!submitting} secureTextEntry autoCapitalize="none" /></Field>
             <View style={styles.roleRow}>{(["member", "admin"] as const).map((value) => <Pressable key={value} disabled={submitting} onPress={() => setRole(value)} style={[styles.roleChoice, role === value && styles.roleChoiceActive]} accessibilityRole="button" accessibilityState={{ selected: role === value }}><Text style={role === value ? styles.roleChoiceTextActive : styles.roleChoiceText}>{value === "member" ? "Membre" : "Administrateur"}</Text></Pressable>)}</View>
             {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
-            <Pressable disabled={submitting} style={[styles.submit, submitting && styles.disabled]} onPress={() => void submit()} accessibilityRole="button"><Text style={styles.submitText}>{submitting ? "Ajout…" : "Ajouter le membre"}</Text></Pressable>
+            <Pressable disabled={submitting} style={[styles.submit, submitting && styles.disabled]} onPress={() => void submit()} accessibilityRole="button"><LoadingLabel loading={!!(submitting)} style={styles.submitText}>{submitting ? "Ajout…" : "Ajouter le membre"}</LoadingLabel></Pressable>
           </View>
         </View>
       </KeyboardSafeScreen>

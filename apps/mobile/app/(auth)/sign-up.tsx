@@ -1,3 +1,4 @@
+import { LoadingLabel } from "../../src/components/loading-state";
 import { useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -77,7 +78,7 @@ export default function SignUp() {
           {passwordRequirements.map(([label, valid], index) => <View style={[styles.requirement, index % 2 === 0 && styles.requirementLeft]} key={label}><Feather name={valid ? "check-circle" : "circle"} size={13} color={valid ? "#00A99D" : "#8493A1"} /><Text style={[styles.requirementLabel, valid && styles.requirementLabelValid]}>{label}</Text></View>)}
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={submit} disabled={loading} accessibilityRole="button"><Text style={styles.submitButtonLabel}>{loading ? "Envoi…" : "Créer un compte"}</Text></Pressable>
+        <Pressable style={[styles.submitButton, loading && styles.submitButtonDisabled]} onPress={submit} disabled={loading} accessibilityRole="button"><LoadingLabel loading={!!(loading)} style={styles.submitButtonLabel}>{loading ? "Envoi…" : "Créer un compte"}</LoadingLabel></Pressable>
         <View style={styles.loginLine}><Text style={styles.loginText}>Vous avez déjà un compte ? </Text><Pressable onPress={() => router.replace("/login")} accessibilityRole="link"><Text style={styles.loginLink}>Se connecter</Text></Pressable></View>
       </View>
       </KeyboardSafeScreen>

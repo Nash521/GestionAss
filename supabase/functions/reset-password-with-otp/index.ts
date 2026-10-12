@@ -18,9 +18,9 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
   const url = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return response({ error: "Service unavailable" }, 503);
   const database = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: membership } = await database.from("membership_requests").select("user_id,status,users!inner(is_active)").eq("phone", phone).maybeSingle();
-  const account = Array.isArray(membership?.users) ? membership.users[0] : membership?.users;
-  if (membership?.status !== "approved" || !account?.is_active) return response({ error: "Invalid or expired code" }, 400);
+  const { data: userId, error: accountError } = await database.rpc("get_password_reset_account", { p_phone: phone });
+  if (accountError) return response({ error: "Service unavailable" }, 503);
+  if (typeof userId !== "string") return response({ error: "Invalid or expired code" }, 400);
   let reservation: unknown;
   try {
     const result = await database.rpc("reserve_password_reset_otp", { p_phone: phone, p_code_hash: hashToDatabase(await hashOtp(code, otpHashSecret)) });
@@ -43,7 +43,7 @@ Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => 
     }
   };
   try {
-    const { error } = await database.auth.admin.updateUserById(membership.user_id, { password });
+    const { error } = await database.auth.admin.updateUserById(userId, { password });
     if (error) {
       await releaseReservation();
       return response({ error: "Service unavailable" }, 503);

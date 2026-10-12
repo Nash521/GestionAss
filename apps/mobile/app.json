@@ -5,11 +5,19 @@
     "scheme": "gestion-ass",
     "plugins": [
       "expo-router",
+      ["expo-image-picker", { "photosPermission": "Autoriser GestionAss à choisir le logo de l’association dans vos photos." }],
       ["expo-local-authentication", { "faceIDPermission": "Autoriser GestionAss à utiliser Face ID pour vous connecter." }],
       "expo-secure-store"
     ],
     "android": {
+      "package": "com.gestionass.test",
       "softwareKeyboardLayoutMode": "resize"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1e9f4622-8ce7-4f1d-88ae-ee3befd84d67"
+      }
+    },
+    "owner": "nash521"
   }
 }

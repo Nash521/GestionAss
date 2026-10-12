@@ -1,20 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { AdminHeader } from "../../src/components/admin-chrome";
+import { useAdminHeaderScroll } from "../../src/components/use-admin-header-scroll";
 import { getSupabaseClient, invokeRegistrationFunction } from "../../src/lib/supabase";
+import { LoadingLabel, LoadingState } from "../../src/components/loading-state";
 
 type Request = { id: string; first_name: string; last_name: string; phone: string; submitted_at: string };
 
 export default function MembershipRequests() {
+  const { headerTranslateY, handleHeaderScroll } = useAdminHeaderScroll();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error: loadError } = await getSupabaseClient().from("membership_requests").select("id, first_name, last_name, phone, submitted_at").eq("status", "pending").order("submitted_at");
-    if (loadError) setError("Impossible de charger les demandes."); else setRequests(data ?? []);
+    setLoading(true);
+    try {
+      const { data, error: loadError } = await getSupabaseClient().from("membership_requests").select("id, first_name, last_name, phone, submitted_at").eq("status", "pending").order("submitted_at");
+      if (loadError) throw loadError;
+      setRequests(data ?? []); setError(null);
+    } catch { setError("Impossible de charger les demandes."); }
+    finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -31,13 +40,13 @@ export default function MembershipRequests() {
   return <View style={styles.page}>
     <View style={styles.content}><Text style={styles.title}>Demandes d’adhésion</Text>
     {error ? <Text style={styles.error}>{error}</Text> : null}</View>
-    <FlatList data={requests} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={styles.empty}>Aucune demande en attente.</Text>} renderItem={({ item }) => <View style={styles.card}>
+    <FlatList onScroll={handleHeaderScroll} scrollEventThrottle={16} data={requests} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={loading ? <LoadingState label="Chargement des demandes…" /> : error ? null : <Text style={styles.empty}>Aucune demande en attente.</Text>} renderItem={({ item }) => <View style={styles.card}>
       <Text style={styles.name}>{item.first_name} {item.last_name}</Text><Text style={styles.phone}>{item.phone}</Text>
-      {rejectingId === item.id ? <><TextInput value={reason} onChangeText={setReason} placeholder="Motif du refus" style={styles.input} multiline /><Pressable style={styles.reject} onPress={() => decide(item.id, "rejected")} disabled={busyId === item.id}><Text style={styles.rejectLabel}>Confirmer le refus</Text></Pressable></> : <View style={styles.actions}>
-        <Pressable style={styles.approve} onPress={() => Alert.alert("Approuver ?", `Valider ${item.first_name} ${item.last_name} ?`, [{ text: "Annuler", style: "cancel" }, { text: "Approuver", onPress: () => { void decide(item.id, "approved"); } }])} disabled={busyId === item.id}><Text style={styles.approveLabel}>Approuver</Text></Pressable>
+      {rejectingId === item.id ? <><TextInput value={reason} onChangeText={setReason} placeholder="Motif du refus" style={styles.input} multiline /><Pressable style={styles.reject} onPress={() => decide(item.id, "rejected")} disabled={busyId === item.id}><LoadingLabel loading={busyId === item.id} style={styles.rejectLabel}>{busyId === item.id ? "Enregistrement…" : "Confirmer le refus"}</LoadingLabel></Pressable></> : <View style={styles.actions}>
+        <Pressable style={styles.approve} onPress={() => Alert.alert("Approuver ?", `Valider ${item.first_name} ${item.last_name} ?`, [{ text: "Annuler", style: "cancel" }, { text: "Approuver", onPress: () => { void decide(item.id, "approved"); } }])} disabled={busyId === item.id}><LoadingLabel loading={busyId === item.id} style={styles.approveLabel}>{busyId === item.id ? "Enregistrement…" : "Approuver"}</LoadingLabel></Pressable>
         <Pressable style={styles.refuse} onPress={() => setRejectingId(item.id)} disabled={busyId === item.id}><Text style={styles.refuseLabel}>Refuser</Text></Pressable>
       </View>}
-    </View>} /><AdminHeader />
+    </View>} /><AdminHeader translateY={headerTranslateY} />
   </View>;
 }
 
