@@ -8,7 +8,7 @@ import { KeyboardSafeScreen } from "../../../src/components/keyboard-safe-screen
 import { clearBiometricLogin } from "../../../src/lib/biometric-session";
 import { getAssociationLogoUrl, getAssociationSettings, saveAssociationSettings, uploadAssociationLogo } from "../../../src/features/admin-configuration/api";
 import { validateAssociationSettings, type AssociationSettings } from "../../../src/features/admin-configuration/association";
-import { normalizeWavePaymentLink } from "../../../src/features/admin-configuration/wave";
+import { normalizeWavePaymentLink, wavePaymentLinkAmount } from "../../../src/features/admin-configuration/wave";
 import { getAdminWaveMonthlyLinks, updateAdminWaveMonthlyLinks } from "../../../src/features/admin-configuration/wave-api";
 import { createAdminFinanceAction, getFunctionErrorMessage, getMonthlyContributionSettings } from "../../../src/lib/supabase";
 import { getSupabaseClient } from "../../../src/lib/supabase-client";
@@ -127,8 +127,10 @@ export default function FinanceSettings() {
     try { fullUrl = normalizeWavePaymentLink(waveFullUrl); halfUrl = normalizeWavePaymentLink(waveHalfUrl); }
     catch (reason) { setWaveError(reason instanceof Error ? reason.message : "Lien Wave invalide."); return; }
     if (!fullUrl) { setWaveError("Ajoutez le lien Wave pour la mensualité complète."); return; }
+    if (wavePaymentLinkAmount(fullUrl) !== Number(monthlyAmount)) { setWaveError(`Le lien de mensualité complète doit indiquer amount=${monthlyAmount}.`); return; }
     if (maxPayments === "2" && !halfUrl) { setWaveError("Ajoutez aussi le lien Wave pour la moitié de la mensualité."); return; }
     if (maxPayments === "2" && Number(monthlyAmount) % 2 !== 0) { setWaveError("Le montant mensuel doit être pair pour deux versements Wave égaux."); return; }
+    if (halfUrl && wavePaymentLinkAmount(halfUrl) !== Number(monthlyAmount) / 2) { setWaveError(`Le lien de demi-mensualité doit indiquer amount=${Number(monthlyAmount) / 2}.`); return; }
     setWaveSaving(true); setWaveError(""); setWaveSaved(false);
     try { await updateAdminWaveMonthlyLinks({ fullUrl, halfUrl }); setWaveSaved(true); }
     catch (reason) { setWaveError((await getFunctionErrorMessage(reason)) ?? "Impossible d’enregistrer les liens Wave."); }

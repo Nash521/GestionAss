@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { getMyMemberDashboard, getMyExceptionalWaveLink } from "../../src/features/member-dashboard/api";
 import { abidjanToday, activeExceptionalDues, type MemberExceptionalDue } from "../../src/features/member-dashboard/model";
-import { normalizeWavePaymentLink } from "../../src/features/admin-configuration/wave";
+import { normalizeWavePaymentLink, wavePaymentLinkAmount } from "../../src/features/admin-configuration/wave";
 
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
 
@@ -29,14 +29,14 @@ export default function ExceptionalContribution() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const openWave = async () => {
-    if (!due || !waveUrl || due.amountPaid > 0 || opening) return;
+    if (!due || !waveUrl || due.amountPaid > 0 || wavePaymentLinkAmount(waveUrl) !== due.amountDue || opening) return;
     setOpening(true); setError("");
     try {
       const [current, currentLink] = await Promise.all([getMyMemberDashboard(new Date().getFullYear()), getMyExceptionalWaveLink(dueId)]);
       const fresh = activeExceptionalDues(current.exceptionalDues, abidjanToday()).find((item) => item.id === dueId);
       if (!fresh) { setDue(null); return; }
       setDue(fresh);
-      if (fresh.amountPaid > 0 || !currentLink) { setError("Le montant restant ne correspond plus à ce lien Wave."); return; }
+      if (fresh.amountPaid > 0 || !currentLink || wavePaymentLinkAmount(currentLink) !== fresh.amountDue) { setError("Le montant restant ne correspond plus à ce lien Wave."); return; }
       const safeUrl = normalizeWavePaymentLink(currentLink);
       if (!safeUrl) throw new Error("Lien Wave absent");
       if (Platform.OS === "web") {
@@ -54,7 +54,7 @@ export default function ExceptionalContribution() {
     {loading ? <LoadingState label="Chargement…" /> : !due ? <View style={styles.card}><Text style={styles.hint}>{error || "Cette cotisation n’est plus ouverte ou son échéance est passée."}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.link}>Actualiser</Text></Pressable></View> : <>
       <View style={styles.card}><View style={styles.icon}><Feather name="gift" size={25} color="#8055A8" /></View><Text style={styles.label}>{due.label}</Text><Text style={styles.amount}>{money(due.amountDue - due.amountPaid)}</Text><Text style={styles.hint}>Reste à payer sur {money(due.amountDue)}</Text><Text style={styles.hint}>Échéance : {new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(`${due.dueDate}T00:00:00`))}</Text></View>
       <Text style={styles.subtitle}>Comment souhaitez-vous payer ?</Text>
-      <Pressable accessibilityRole="button" accessibilityState={{ disabled: !waveUrl || due.amountPaid > 0 || opening }} disabled={!waveUrl || due.amountPaid > 0 || opening} onPress={() => void openWave()} style={[styles.choice, (!waveUrl || due.amountPaid > 0) && styles.disabled]}><Image source={require("../../assets/wave-logo.png")} style={styles.logo} /><View style={styles.choiceCopy}><Text style={styles.choiceTitle}>Wave</Text><Text style={styles.hint}>{due.amountPaid > 0 ? "Versement partiel déjà reçu : contactez l’administrateur" : waveUrl ? `Ouvrir le lien de ${money(due.amountDue)}` : "Lien Wave non configuré"}</Text></View><Feather name="external-link" size={17} color="#007D74" /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: !waveUrl || due.amountPaid > 0 || wavePaymentLinkAmount(waveUrl ?? "") !== due.amountDue || opening }} disabled={!waveUrl || due.amountPaid > 0 || wavePaymentLinkAmount(waveUrl ?? "") !== due.amountDue || opening} onPress={() => void openWave()} style={[styles.choice, (!waveUrl || due.amountPaid > 0 || wavePaymentLinkAmount(waveUrl ?? "") !== due.amountDue) && styles.disabled]}><Image source={require("../../assets/wave-logo.png")} style={styles.logo} /><View style={styles.choiceCopy}><Text style={styles.choiceTitle}>Wave</Text><Text style={styles.hint}>{due.amountPaid > 0 ? "Versement partiel déjà reçu : contactez l’administrateur" : waveUrl && wavePaymentLinkAmount(waveUrl) === due.amountDue ? `Ouvrir le lien de ${money(due.amountDue)}` : "Lien Wave non configuré pour ce montant"}</Text></View><Feather name="external-link" size={17} color="#007D74" /></Pressable>
       <View style={styles.choice}><View style={styles.cashIcon}><Feather name="dollar-sign" size={22} color="#007D74" /></View><View style={styles.choiceCopy}><Text style={styles.choiceTitle}>Espèces</Text><Text style={styles.hint}>Remettez votre paiement à l’administrateur, qui l’enregistrera après réception.</Text></View></View>
       <Text style={styles.notice}>Le paiement Wave sera enregistré après vérification par l’administrateur. Vérifiez le montant et la cotisation auprès de lui avant de payer.</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}

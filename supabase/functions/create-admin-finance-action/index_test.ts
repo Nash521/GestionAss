@@ -47,7 +47,7 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
     { action: "getMonthlySettings" },
     { action: "getMonthlyPaymentContext", memberId: dueId, dueId },
     { action: "generateMonthly", month: "2026-08-01" },
-    { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId], wavePaymentUrl: "https://pay.wave.com/m/M_test" },
+    { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId], wavePaymentUrl: "https://pay.wave.com/m/M_test/c/ci/?amount=200" },
     { action: "recordPayment", kind: "monthly", dueId, amount: 100, paidOn: "2026-08-20", reference: "ref", source: "manual" },
     { action: "recordMonthlyStepPayment", memberId: dueId, dueId, amount: 500, paidOn: "2026-08-20", reference: "ref", source: "wave" },
     { action: "createDisbursement", label: "Aid", amount: 50, disbursedOn: "2026-08-20", type: "member_aid", beneficiaryMemberId: dueId, exceptionalContributionId: null, justification: "Medical" },

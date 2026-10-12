@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { DisbursementTargetPicker } from "../../../src/features/finance/disbursement-target-picker";
 import { createAdminFinanceAction, getFunctionErrorMessage } from "../../../src/lib/supabase";
-import { normalizeWavePaymentLink } from "../../../src/features/admin-configuration/wave";
+import { normalizeWavePaymentLink, wavePaymentLinkAmount } from "../../../src/features/admin-configuration/wave";
 
 const today = new Date().toISOString().slice(0, 10);
 const isValidDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
@@ -37,6 +37,7 @@ export default function NewFinance() {
       try { validWaveUrl = normalizeWavePaymentLink(wavePaymentUrl); }
       catch (reason) { setError(reason instanceof Error ? reason.message : "Lien Wave invalide."); return; }
       if (!validWaveUrl) { setError("Ajoutez le lien Wave correspondant au montant de la cotisation."); return; }
+      if (wavePaymentLinkAmount(validWaveUrl) !== numeric) { setError(`Le lien Wave doit indiquer amount=${numeric}.`); return; }
     }
     if (disbursement && (!justification.trim() || (memberId.trim() && contributionId.trim()))) { setError("Justification obligatoire ; choisissez au maximum une cible."); return; }
     if (disbursement && targetKind === "member" && !memberId) { setError("Choisissez un bénéficiaire."); return; }
