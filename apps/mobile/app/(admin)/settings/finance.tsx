@@ -8,17 +8,12 @@ import { KeyboardSafeScreen } from "../../../src/components/keyboard-safe-screen
 import { clearBiometricLogin } from "../../../src/lib/biometric-session";
 import { getAssociationLogoUrl, getAssociationSettings, saveAssociationSettings, uploadAssociationLogo } from "../../../src/features/admin-configuration/api";
 import { validateAssociationSettings, type AssociationSettings } from "../../../src/features/admin-configuration/association";
-import { getPaymentProviderStatuses, removePaymentProviderKey, savePaymentProviderKey, type PaymentProvider, type ProviderStatus } from "../../../src/features/admin-configuration/payment-providers";
+import { normalizeWavePaymentLink } from "../../../src/features/admin-configuration/wave";
+import { getAdminWaveMonthlyLinks, updateAdminWaveMonthlyLinks } from "../../../src/features/admin-configuration/wave-api";
 import { createAdminFinanceAction, getFunctionErrorMessage, getMonthlyContributionSettings } from "../../../src/lib/supabase";
 import { getSupabaseClient } from "../../../src/lib/supabase-client";
 
 const emptyAssociation: AssociationSettings = { name: "", address: "", phone: "", email: "", logoPath: null };
-const providers: { key: PaymentProvider; name: string }[] = [
-  { key: "wave", name: "Wave" },
-  { key: "orange_money", name: "Orange Money" },
-  { key: "mtn_momo", name: "MTN MoMo" },
-];
-
 export default function FinanceSettings() {
   const [association, setAssociation] = useState<AssociationSettings>(emptyAssociation);
   const [organizationId, setOrganizationId] = useState("");
@@ -36,12 +31,12 @@ export default function FinanceSettings() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [providerStatuses, setProviderStatuses] = useState<ProviderStatus[]>([]);
-  const [providerKeys, setProviderKeys] = useState<Partial<Record<PaymentProvider, string>>>({});
-  const [providerLoading, setProviderLoading] = useState(true);
-  const [providerSaving, setProviderSaving] = useState<PaymentProvider | null>(null);
-  const [providerError, setProviderError] = useState("");
-  const [providerSaved, setProviderSaved] = useState<PaymentProvider | null>(null);
+  const [waveFullUrl, setWaveFullUrl] = useState("");
+  const [waveHalfUrl, setWaveHalfUrl] = useState("");
+  const [waveLoading, setWaveLoading] = useState(true);
+  const [waveSaving, setWaveSaving] = useState(false);
+  const [waveError, setWaveError] = useState("");
+  const [waveSaved, setWaveSaved] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
 
@@ -67,9 +62,9 @@ export default function FinanceSettings() {
       setMaxPayments(String(id.maxPayments));
     }).catch(() => { if (active) setError("Impossible de charger les paramètres des cotisations."); })
       .finally(() => { if (active) setLoading(false); });
-    void getPaymentProviderStatuses().then((statuses) => { if (active) setProviderStatuses(statuses); })
-      .catch(() => { if (active) setProviderError("Impossible de charger les comptes de paiement."); })
-      .finally(() => { if (active) setProviderLoading(false); });
+    void getAdminWaveMonthlyLinks().then((links) => { if (active) { setWaveFullUrl(links.fullUrl ?? ""); setWaveHalfUrl(links.halfUrl ?? ""); } })
+      .catch(() => { if (active) setWaveError("Impossible de charger les liens Wave."); })
+      .finally(() => { if (active) setWaveLoading(false); });
     return () => { active = false; };
   }, []);
 
@@ -126,30 +121,18 @@ export default function FinanceSettings() {
     finally { setSaving(false); }
   };
 
-  const saveProvider = async (provider: PaymentProvider) => {
-    const apiKey = providerKeys[provider]?.trim();
-    if (providerSaving || !apiKey) return;
-    setProviderSaving(provider); setProviderError(""); setProviderSaved(null);
-    try {
-      await savePaymentProviderKey(provider, apiKey);
-      setProviderKeys((current) => ({ ...current, [provider]: "" }));
-      setProviderStatuses((current) => current.map((item) => item.provider === provider ? { ...item, configured: true, updatedAt: new Date().toISOString() } : item));
-      setProviderSaved(provider);
-    } catch (reason) {
-      setProviderError((await getFunctionErrorMessage(reason)) ?? "Impossible d’enregistrer la clé. Vérifiez la configuration du serveur.");
-    } finally { setProviderSaving(null); }
-  };
-
-  const removeProvider = async (provider: PaymentProvider) => {
-    if (providerSaving) return;
-    setProviderSaving(provider); setProviderError(""); setProviderSaved(null);
-    try {
-      await removePaymentProviderKey(provider);
-      setProviderKeys((current) => ({ ...current, [provider]: "" }));
-      setProviderStatuses((current) => current.map((item) => item.provider === provider ? { ...item, configured: false, updatedAt: null } : item));
-    } catch (reason) {
-      setProviderError((await getFunctionErrorMessage(reason)) ?? "Impossible de supprimer la clé.");
-    } finally { setProviderSaving(null); }
+  const saveWaveLinks = async () => {
+    if (waveSaving) return;
+    let fullUrl: string | null; let halfUrl: string | null;
+    try { fullUrl = normalizeWavePaymentLink(waveFullUrl); halfUrl = normalizeWavePaymentLink(waveHalfUrl); }
+    catch (reason) { setWaveError(reason instanceof Error ? reason.message : "Lien Wave invalide."); return; }
+    if (!fullUrl) { setWaveError("Ajoutez le lien Wave pour la mensualité complète."); return; }
+    if (maxPayments === "2" && !halfUrl) { setWaveError("Ajoutez aussi le lien Wave pour la moitié de la mensualité."); return; }
+    if (maxPayments === "2" && Number(monthlyAmount) % 2 !== 0) { setWaveError("Le montant mensuel doit être pair pour deux versements Wave égaux."); return; }
+    setWaveSaving(true); setWaveError(""); setWaveSaved(false);
+    try { await updateAdminWaveMonthlyLinks({ fullUrl, halfUrl }); setWaveSaved(true); }
+    catch (reason) { setWaveError((await getFunctionErrorMessage(reason)) ?? "Impossible d’enregistrer les liens Wave."); }
+    finally { setWaveSaving(false); }
   };
 
   const signOut = async () => {
@@ -199,20 +182,15 @@ export default function FinanceSettings() {
       <Pressable accessibilityRole="button" disabled={loading || saving} onPress={() => void save()} style={[styles.submit, (loading || saving) && styles.disabled]}><LoadingLabel loading={!!(saving)} style={styles.submitText}>{saving ? "Enregistrement…" : "Enregistrer les cotisations"}</LoadingLabel></Pressable>
     </View>
     <View style={styles.card}>
-      <Text style={styles.sectionTitle}>Finance</Text>
-      <Text style={styles.hint}>Préparez les comptes Business de votre association. Les clés sont chiffrées côté serveur et ne sont jamais réaffichées.</Text>
-      {providerLoading ? <LoadingState label="Chargement des comptes…" /> : null}
-      {providers.map((provider) => {
-        const configured = providerStatuses.some((item) => item.provider === provider.key && item.configured);
-        return <View key={provider.key} style={styles.providerCard}>
-          <View style={styles.providerHeading}><View style={styles.providerLogo}><Image source={provider.key === "wave" ? require("../../../assets/wave-logo.png") : provider.key === "orange_money" ? require("../../../assets/orange-money-logo.jpg") : require("../../../assets/mtn-momo-logo.png")} style={styles.providerImage} resizeMode="contain" accessibilityLabel={`Logo ${provider.name}`} /></View><View style={styles.providerNameBlock}><Text style={styles.providerName}>{provider.name}</Text><Text style={styles.hint}>{configured ? "Clé enregistrée" : "Aucune clé enregistrée"}</Text></View><Feather name={configured ? "check-circle" : "circle"} size={19} color={configured ? "#087C70" : "#A9B8B5"} /></View>
-          <TextInput value={providerKeys[provider.key] ?? ""} onChangeText={(value) => { setProviderKeys((current) => ({ ...current, [provider.key]: value })); setProviderSaved(null); setProviderError(""); }} editable={!providerLoading && !providerSaving} secureTextEntry autoCapitalize="none" autoCorrect={false} placeholder={configured ? "Nouvelle clé pour remplacer l’actuelle" : "Clé API du compte Business"} style={styles.input} accessibilityLabel={`Clé API ${provider.name}`} />
-          <View style={styles.providerActions}><Pressable accessibilityRole="button" disabled={providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()} onPress={() => void saveProvider(provider.key)} style={[styles.providerSave, (providerLoading || !!providerSaving || !providerKeys[provider.key]?.trim()) && styles.disabled]}><LoadingLabel loading={!!(providerSaving === provider.key)} style={styles.providerSaveText}>{providerSaving === provider.key ? "Enregistrement…" : configured ? "Remplacer la clé" : "Enregistrer la clé"}</LoadingLabel></Pressable>{configured ? <Pressable accessibilityRole="button" disabled={!!providerSaving} onPress={() => void removeProvider(provider.key)}><Text style={styles.providerRemove}>Supprimer</Text></Pressable> : null}</View>
-          {providerSaved === provider.key ? <Text style={styles.success}>Clé chiffrée et enregistrée.</Text> : null}
-        </View>;
-      })}
-      {providerError ? <Text style={styles.error} accessibilityRole="alert">{providerError}</Text> : null}
-      <Text style={styles.hint}>Une clé API seule ne suffit pas à activer tous les opérateurs : les paiements seront proposés après validation des accès marchands et de leur intégration.</Text>
+      <Text style={styles.sectionTitle}>Paiements Wave</Text>
+      <Text style={styles.hint}>Créez dans Wave Business deux liens au montant fixe : {monthlyAmount || "—"} XOF pour une mensualité complète et {Number(monthlyAmount) / 2 || "—"} XOF pour la moitié. Collez-les ici pour les membres de cette association.</Text>
+      {waveLoading ? <LoadingState label="Chargement des liens…" /> : null}
+      <Text style={styles.label}>Lien mensualité complète</Text><TextInput value={waveFullUrl} onChangeText={(value) => { setWaveFullUrl(value); setWaveSaved(false); }} editable={!waveLoading && !waveSaving} autoCapitalize="none" autoCorrect={false} placeholder="https://pay.wave.com/m/…" style={styles.input} accessibilityLabel="Lien Wave mensualité complète" />
+      <Text style={styles.label}>Lien demi-mensualité</Text><TextInput value={waveHalfUrl} onChangeText={(value) => { setWaveHalfUrl(value); setWaveSaved(false); }} editable={!waveLoading && !waveSaving} autoCapitalize="none" autoCorrect={false} placeholder="https://pay.wave.com/m/…" style={styles.input} accessibilityLabel="Lien Wave demi-mensualité" />
+      <Text style={styles.hint}>Un lien ne confirme pas automatiquement le paiement. Le membre doit vérifier le montant affiché dans Wave et l’administrateur doit confirmer le versement reçu.</Text>
+      {waveError ? <Text style={styles.error} accessibilityRole="alert">{waveError}</Text> : null}
+      {waveSaved ? <Text style={styles.success}>Liens Wave enregistrés.</Text> : null}
+      <Pressable accessibilityRole="button" disabled={waveLoading || waveSaving} onPress={() => void saveWaveLinks()} style={[styles.submit, (waveLoading || waveSaving) && styles.disabled]}><LoadingLabel loading={waveSaving} style={styles.submitText}>{waveSaving ? "Enregistrement…" : "Enregistrer les liens Wave"}</LoadingLabel></Pressable>
     </View>
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Session</Text>

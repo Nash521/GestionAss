@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { DisbursementTargetPicker } from "../../../src/features/finance/disbursement-target-picker";
 import { createAdminFinanceAction, getFunctionErrorMessage } from "../../../src/lib/supabase";
+import { normalizeWavePaymentLink } from "../../../src/features/admin-configuration/wave";
 
 const today = new Date().toISOString().slice(0, 10);
 const isValidDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
@@ -21,6 +22,7 @@ export default function NewFinance() {
   const [targetLabel, setTargetLabel] = useState("");
   const [picker, setPicker] = useState<"member" | "contribution" | null>(null);
   const [justification, setJustification] = useState("");
+  const [wavePaymentUrl, setWavePaymentUrl] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -30,6 +32,12 @@ export default function NewFinance() {
     if (!label.trim()) { setError("Le libellé est obligatoire."); return; }
     if (!Number.isFinite(numeric) || numeric <= 0) { setError("Le montant doit être supérieur à zéro."); return; }
     if (!isValidDate(date)) { setError("Saisissez une date valide au format AAAA-MM-JJ."); return; }
+    let validWaveUrl: string | null = null;
+    if (!disbursement) {
+      try { validWaveUrl = normalizeWavePaymentLink(wavePaymentUrl); }
+      catch (reason) { setError(reason instanceof Error ? reason.message : "Lien Wave invalide."); return; }
+      if (!validWaveUrl) { setError("Ajoutez le lien Wave correspondant au montant de la cotisation."); return; }
+    }
     if (disbursement && (!justification.trim() || (memberId.trim() && contributionId.trim()))) { setError("Justification obligatoire ; choisissez au maximum une cible."); return; }
     if (disbursement && targetKind === "member" && !memberId) { setError("Choisissez un bénéficiaire."); return; }
     if (disbursement && targetKind === "contribution" && !contributionId) { setError("Choisissez une cotisation."); return; }
@@ -44,7 +52,7 @@ export default function NewFinance() {
           justification: justification.trim(),
         });
       } else {
-        await createAdminFinanceAction({ action: "createExceptional", label: label.trim(), amount: numeric, dueDate: date, targetMemberIds: [] });
+        await createAdminFinanceAction({ action: "createExceptional", label: label.trim(), amount: numeric, dueDate: date, targetMemberIds: [], wavePaymentUrl: validWaveUrl! });
       }
       router.replace("/(admin)/finances");
     } catch (submissionError) {
@@ -56,6 +64,7 @@ export default function NewFinance() {
     <Pressable onPress={() => router.replace("/(admin)/finances")} accessibilityRole="button" accessibilityLabel="Retour aux finances" style={styles.back}><Feather name="arrow-left" size={19} color="#087C70" /><Text style={styles.backText}>Finances</Text></Pressable>
     <View style={styles.heading}><View style={[styles.headingIcon, disbursement && styles.headingIconExpense]}><Feather name={disbursement ? "arrow-up-right" : "gift"} size={22} color={disbursement ? "#B4613F" : "#087C70"} /></View><Text style={styles.kicker}>{disbursement ? "SORTIE DE TRÉSORERIE" : "COTISATION EXCEPTIONNELLE"}</Text><Text style={styles.title}>{disbursement ? "Nouveau décaissement" : "Créer une cotisation"}</Text><Text style={styles.subtitle}>{disbursement ? "Renseignez le montant, la date et le motif de la dépense." : "La cotisation sera créée pour tous les membres actifs."}</Text></View>
     <View style={styles.formSection}><View style={styles.formSectionTitle}><Feather name="file-text" size={17} color="#087C70" /><Text style={styles.formSectionText}>{disbursement ? "Informations du décaissement" : "Informations de la cotisation"}</Text></View><Field label="Libellé" value={label} onChangeText={setLabel} placeholder={disbursement ? "Ex. Achat de fournitures" : "Ex. Fonds de solidarité"} /><Field label="Montant" value={amount} onChangeText={setAmount} placeholder="Montant en FCFA" keyboardType="decimal-pad" /><Field label={disbursement ? "Date du décaissement" : "Date d’échéance"} value={date} onChangeText={setDate} placeholder="AAAA-MM-JJ" /><Text style={styles.help}>Format de date : AAAA-MM-JJ</Text></View>
+    {!disbursement ? <View style={styles.formSection}><Text style={styles.formSectionText}>Paiement Wave</Text><Field label="Lien Wave pour ce montant" value={wavePaymentUrl} onChangeText={setWavePaymentUrl} placeholder="https://pay.wave.com/m/…" /><Text style={styles.help}>Créez dans Wave un lien correspondant au montant indiqué, puis collez-le ici. Vérifiez le montant affiché par Wave avant de confirmer.</Text></View> : null}
     {disbursement ? <View style={styles.formSection}><View style={styles.formSectionTitle}><Feather name="align-left" size={17} color="#087C70" /><Text style={styles.formSectionText}>Motif et affectation</Text></View><Field label="Justification" value={justification} onChangeText={setJustification} placeholder="Expliquez la sortie de trésorerie" multiline /><Text style={styles.help}>La justification est obligatoire pour enregistrer la dépense.</Text><View style={styles.separator} /><Text style={styles.optional}>BÉNÉFICIAIRE FACULTATIF</Text>
       <View style={styles.choices}>{([{ key: "none", label: "Sans bénéficiaire" }, { key: "member", label: "Aide à un membre" }, { key: "contribution", label: "Cotisation liée" }] as const).map((choice) => <Pressable key={choice.key} accessibilityRole="button" accessibilityState={{ selected: targetKind === choice.key }} disabled={saving} onPress={() => { setTargetKind(choice.key); setMemberId(""); setContributionId(""); setTargetLabel(""); setError(""); }} style={[styles.choice, targetKind === choice.key && styles.choiceActive]}><Text style={[styles.choiceText, targetKind === choice.key && styles.choiceTextActive]}>{choice.label}</Text></Pressable>)}</View>
       {targetKind === "none" ? <Text style={styles.help}>Dépense générale de l’association, sans bénéficiaire.</Text> : <><Text style={styles.label}>{targetKind === "member" ? "Membre bénéficiaire" : "Cotisation exceptionnelle"}</Text><Pressable accessibilityRole="button" disabled={saving} onPress={() => setPicker(targetKind)} style={styles.target}><Text style={styles.targetText}>{targetLabel || (targetKind === "member" ? "Choisir un bénéficiaire" : "Choisir une cotisation")}</Text><Feather name="chevron-down" size={18} color="#087C70" /></Pressable></>}</View> : null}

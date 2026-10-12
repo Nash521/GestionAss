@@ -4,8 +4,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { monthlyPaymentSelection } from "../../../../src/features/members/monthly-payment-selection";
-import { getMyMemberWavePaymentLink, getMyMonthlyPaymentContext } from "../../../../src/features/member-dashboard/api";
-import { normalizeWavePaymentLink } from "../../../../src/features/admin-configuration/wave";
+import { getMyWaveMonthlyLinks, getMyMonthlyPaymentContext } from "../../../../src/features/member-dashboard/api";
+import { monthlyWaveLinkForPayment, normalizeWavePaymentLink } from "../../../../src/features/admin-configuration/wave";
 import { createAdminFinanceAction, getFunctionErrorMessage, getMonthlyPaymentContext, type MonthlyPaymentContext } from "../../../../src/lib/supabase";
 
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(value);
@@ -25,7 +25,7 @@ export default function MonthlyPaymentMethod({ memberMonth }: { memberMonth?: st
     let active = true;
     if ((memberMonth ? !/^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(memberMonth) : !memberId || !dueId) || !Number.isInteger(amount) || amount <= 0) { setLoading(false); setError("Montant ou mensualité invalide."); return; }
     const request = memberMonth
-      ? Promise.all([getMyMonthlyPaymentContext(memberMonth), getMyMemberWavePaymentLink()]).then(([id, url]) => ({ id, url }))
+      ? Promise.all([getMyMonthlyPaymentContext(memberMonth), getMyWaveMonthlyLinks()]).then(([id, links]) => ({ id, url: id ? monthlyWaveLinkForPayment(links, id.amountDue, id.amountPaid, amount) : null }))
       : getMonthlyPaymentContext(memberId, dueId).then(({ id }) => ({ id, url: null }));
     void request.then(({ id, url }) => { if (active) { setContext(id); setWaveUrl(url ? normalizeWavePaymentLink(url) : null); } }).catch(() => { if (active) setError("Impossible de vérifier cette mensualité."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -37,13 +37,21 @@ export default function MonthlyPaymentMethod({ memberMonth }: { memberMonth?: st
     if (!context || !source || !amountValid || saving) return;
     if (memberMonth) {
       if (source === "manual") { router.replace({ pathname: "/monthly/[month]", params: { month: memberMonth } }); return; }
-      if (!waveUrl) { setError("Le lien de paiement Wave n’est pas encore configuré."); return; }
+      if (!waveUrl) { setError("Aucun lien Wave ne correspond à ce montant. Choisissez le montant total ou la moitié configurée."); return; }
       try {
+        const [fresh, links] = await Promise.all([getMyMonthlyPaymentContext(memberMonth), getMyWaveMonthlyLinks()]);
+        if (!fresh || !monthlyPaymentSelection(fresh).options.some((option) => option.amount === amount)) {
+          setError("La mensualité a changé. Revenez au choix du montant pour l’actualiser."); return;
+        }
+        const freshUrl = monthlyWaveLinkForPayment(links, fresh.amountDue, fresh.amountPaid, amount);
+        if (!freshUrl) { setError("Aucun lien Wave ne correspond au solde actuel."); return; }
+        const safeUrl = normalizeWavePaymentLink(freshUrl);
+        if (!safeUrl) throw new Error("Lien Wave absent");
         if (Platform.OS === "web") {
-          const opened = globalThis.open(waveUrl, "_blank");
+          const opened = globalThis.open(safeUrl, "_blank");
           if (!opened) throw new Error("Fenêtre bloquée");
           opened.opener = null;
-        } else await Linking.openURL(waveUrl);
+        } else await Linking.openURL(safeUrl);
       } catch { setError("Impossible d’ouvrir Wave. Réessayez ou vérifiez les fenêtres bloquées."); }
       return;
     }
@@ -91,7 +99,7 @@ export default function MonthlyPaymentMethod({ memberMonth }: { memberMonth?: st
           {source === "manual" ? <Feather name="check-circle" size={22} color="#00A99D" /> : null}
         </Pressable>
         {source === "wave" && !memberMonth ? <View style={styles.referenceField}><Text style={styles.label}>Référence du paiement Wave</Text><TextInput value={reference} onChangeText={setReference} placeholder="Référence de la transaction reçue" accessibilityLabel="Référence du paiement Wave" style={styles.input} autoCapitalize="characters" /></View> : null}
-        <Text style={styles.notice}>{memberMonth ? source === "manual" ? `Présentez-vous auprès de l’administrateur avec ${money(amount)}. Il enregistrera le versement après l’avoir reçu.` : source === "wave" ? `Saisissez ${money(amount)} dans Wave. Le paiement sera enregistré après vérification par l’administrateur.` : "Le paiement sera enregistré après vérification par l’administrateur." : "Vérifiez que le montant a bien été reçu avant de l’enregistrer."}</Text>
+        <Text style={styles.notice}>{memberMonth ? source === "manual" ? `Présentez-vous auprès de l’administrateur avec ${money(amount)}. Il enregistrera le versement après l’avoir reçu.` : source === "wave" ? `Le lien prévu pour ${money(amount)} s’ouvrira. Vérifiez ce montant dans Wave avant de confirmer. Le paiement sera enregistré après vérification par l’administrateur.` : "Le paiement sera enregistré après vérification par l’administrateur." : "Vérifiez que le montant a bien été reçu avant de l’enregistrer."}</Text>
       </>}
       {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
       <Pressable accessibilityRole="button" disabled={!amountValid || !source || saving} onPress={() => void submit()} style={[styles.submit, (!amountValid || !source || saving) && styles.disabled]}><LoadingLabel loading={saving} style={styles.submitText}>{memberMonth ? source === "wave" ? "Ouvrir Wave" : "Voir la mensualité" : saving ? "Enregistrement…" : "Confirmer le paiement"}</LoadingLabel></Pressable>

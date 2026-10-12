@@ -47,7 +47,7 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
     { action: "getMonthlySettings" },
     { action: "getMonthlyPaymentContext", memberId: dueId, dueId },
     { action: "generateMonthly", month: "2026-08-01" },
-    { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId] },
+    { action: "createExceptional", label: "Solidarite", amount: 200, dueDate: "2026-08-20", targetMemberIds: [dueId], wavePaymentUrl: "https://pay.wave.com/m/M_test" },
     { action: "recordPayment", kind: "monthly", dueId, amount: 100, paidOn: "2026-08-20", reference: "ref", source: "manual" },
     { action: "recordMonthlyStepPayment", memberId: dueId, dueId, amount: 500, paidOn: "2026-08-20", reference: "ref", source: "wave" },
     { action: "createDisbursement", label: "Aid", amount: 50, disbursedOn: "2026-08-20", type: "member_aid", beneficiaryMemberId: dueId, exceptionalContributionId: null, justification: "Medical" },
@@ -56,7 +56,7 @@ Deno.test("create-admin-finance-action routes actions with authenticated admin i
   ];
   for (const input of inputs) if ((await handler(db)(request(input))).status !== 200) throw new Error(`expected success for ${input.action}`);
   const names = calls.map((call) => call.name).join(",");
-  if (names !== "get_monthly_contribution_settings,get_admin_monthly_payment_context,generate_monthly_contribution_dues,create_exceptional_contribution,record_contribution_payment,record_monthly_step_payment,create_disbursement,update_monthly_contribution_settings,update_admin_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
+  if (names !== "get_monthly_contribution_settings,get_admin_monthly_payment_context,generate_monthly_contribution_dues,create_exceptional_contribution_with_wave_link,record_contribution_payment,record_monthly_step_payment,create_disbursement,update_monthly_contribution_settings,update_admin_contribution_settings") throw new Error(`unexpected RPCs: ${names}`);
   if (calls.some((call) => call.args.admin_id !== identity.data.user.id)) throw new Error("expected authenticated admin id");
   if (calls[1].args.target_member_id !== dueId || calls[1].args.target_due_id !== dueId) throw new Error("expected selected member and due identifiers");
   if (calls.at(-1)?.args.max_payments !== 2) throw new Error("expected installment limit in settings update");

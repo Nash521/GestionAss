@@ -58,7 +58,7 @@ export type AdminFinanceAction =
   | { action: "getMonthlySettings" }
   | { action: "getMonthlyPaymentContext"; memberId: string; dueId: string }
   | { action: "generateMonthly"; month: string }
-  | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[] }
+  | { action: "createExceptional"; label: string; amount: number; dueDate: string; targetMemberIds: string[]; wavePaymentUrl: string }
   | { action: "recordPayment"; kind: "membership" | "monthly" | "exceptional"; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
   | { action: "recordMonthlyStepPayment"; memberId: string; dueId: string; amount: number; paidOn: string; reference?: string; source: "manual" | "wave" }
   | { action: "createDisbursement"; label: string; amount: number; disbursedOn: string; type: "general_expense" | "member_aid" | "exceptional_contribution_payment"; beneficiaryMemberId: string | null; exceptionalContributionId: string | null; justification: string }
