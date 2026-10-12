@@ -10,6 +10,7 @@ import { getAssociationLogoUrl, getAssociationSettings, saveAssociationSettings,
 import { validateAssociationSettings, type AssociationSettings } from "../../../src/features/admin-configuration/association";
 import { normalizeWavePaymentLink, waveMerchantId, wavePaymentLinkAmount } from "../../../src/features/admin-configuration/wave";
 import { getAdminWaveMonthlyLinks, updateAdminWaveMonthlyLinks } from "../../../src/features/admin-configuration/wave-api";
+import { WaveMerchantRotation } from "../../../src/features/admin-configuration/wave-merchant-rotation";
 import { createAdminFinanceAction, getFunctionErrorMessage, getMonthlyContributionSettings } from "../../../src/lib/supabase";
 import { getSupabaseClient } from "../../../src/lib/supabase-client";
 
@@ -197,6 +198,7 @@ export default function FinanceSettings() {
       {waveSaved ? <Text style={styles.success}>Liens Wave enregistrés.</Text> : null}
       <Pressable accessibilityRole="button" disabled={waveLoading || waveSaving} onPress={() => void saveWaveLinks()} style={[styles.submit, (waveLoading || waveSaving) && styles.disabled]}><LoadingLabel loading={waveSaving} style={styles.submitText}>{waveSaving ? "Enregistrement…" : "Enregistrer les liens Wave"}</LoadingLabel></Pressable>
     </View>
+    <WaveMerchantRotation merchantId={waveMerchant} monthlyAmount={Number(monthlyAmount)} maxPayments={Number(maxPayments)} onChanged={async () => { const links = await getAdminWaveMonthlyLinks(); setWaveFullUrl(links.fullUrl ?? ""); setWaveHalfUrl(links.halfUrl ?? ""); setWaveMerchant(links.merchantId ?? null); }} />
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Session</Text>
       <Text style={styles.hint}>Fermez votre session sur cet appareil.</Text>
