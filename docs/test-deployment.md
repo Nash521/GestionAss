@@ -11,7 +11,7 @@ L'application Expo utilise Supabase pour PostgreSQL, l'authentification et les E
 
 ## Web sur Netlify
 
-Le fichier `netlify.toml` exporte le frontend web d'Expo dans `apps/mobile/dist`. Dans les variables d'environnement du site Netlify, configurer `EXPO_PUBLIC_SUPABASE_URL` avec l'URL du projet Supabase hébergé et `EXPO_PUBLIC_SUPABASE_ANON_KEY` avec sa clé publique. Ces deux valeurs sont intégrées au bundle web lors du build ; toute modification impose un nouveau build. Vérifier les domaines et URL de redirection autorisés côté Supabase avant de tester l'authentification.
+Le fichier `netlify.toml` exporte le frontend web d'Expo dans `apps/mobile/dist`. Dans les variables d'environnement du site Netlify, configurer `EXPO_PUBLIC_SUPABASE_URL` avec l'URL du projet Supabase hébergé et `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` avec sa clé publique. L'ancien nom `EXPO_PUBLIC_SUPABASE_ANON_KEY` reste accepté pour le développement local. Ces valeurs sont intégrées au bundle web lors du build ; toute modification impose un nouveau build. Vérifier les domaines et URL de redirection autorisés côté Supabase avant de tester l'authentification.
 
 ## APK Android de test
 

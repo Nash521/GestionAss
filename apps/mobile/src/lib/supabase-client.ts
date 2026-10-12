@@ -9,7 +9,7 @@ export type AccountRole = "admin" | "member";
 export function getSupabaseClient() {
   if (client) return client;
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Configuration Supabase manquante.");
   client = createClient(url, key, {
     auth: {
