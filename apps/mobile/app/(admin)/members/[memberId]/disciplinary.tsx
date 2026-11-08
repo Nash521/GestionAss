@@ -191,7 +191,7 @@ export default function MemberDisciplinaryCases() {
     : <State message="Impossible de charger les dossiers disciplinaires." retry={() => void loadData()} />;
 
   return <View style={styles.page}>
-    <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <ImageBackground source={background} style={styles.background} imageStyle={styles.backgroundImage}>
         <View style={styles.content}>
           <Pressable accessibilityRole="button" accessibilityLabel="Retour à la fiche membre" onPress={() => router.back()} style={styles.back}>
@@ -288,7 +288,7 @@ function State({ message, retry }: { message: string; retry?: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1 }, background: { minHeight: "100%" }, backgroundImage: { resizeMode: "cover" },
+  page: { flex: 1 }, background: { flexGrow: 1, minHeight: "100%" }, backgroundImage: { height: "100%", resizeMode: "cover", width: "100%" },
   content: { gap: 14, padding: 20, paddingBottom: 110, paddingTop: 116 },
   back: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row", gap: 7 }, backText: { color: "#007D74", fontWeight: "800" },
   title: { color: "#102B3D", fontSize: 28, fontWeight: "800" }, intro: { color: "#65758A", lineHeight: 20 },
