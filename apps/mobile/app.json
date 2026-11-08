@@ -17,11 +17,24 @@
           "faceIDPermission": "Autoriser GestionAss à utiliser Face ID pour vous connecter."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "./with-presentation-network.cjs"
     ],
     "android": {
       "softwareKeyboardLayoutMode": "resize",
-      "package": "ci.gestionass.presentation"
-    }
+      "package": "ci.gestionass.presentation",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1e9f4622-8ce7-4f1d-88ae-ee3befd84d67"
+      }
+    },
+    "owner": "nash521"
   }
 }

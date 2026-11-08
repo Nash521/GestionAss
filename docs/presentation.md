@@ -9,3 +9,5 @@ Comptes créés par le script, sur une base neuve : administrateur `+22507019900
 Le profil EAS `presentation` produit un APK Android (`npx eas-cli build --platform android --profile presentation`). Il faut un compte Expo connecté et un projet EAS configuré. Définir les variables publiques `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY` pour l'environnement de build. L'URL doit être accessible depuis le téléphone : `localhost` sur le téléphone ne pointe pas vers l'ordinateur. L'APK est un client : les données, les fonctions et l'authentification restent dans Supabase et ne sont pas embarquées hors ligne. Ne pas embarquer la clé service ni les secrets Jèko.
 
 La configuration Jèko est en cours de validation ; ne pas utiliser cet APK pour des paiements réels avant les essais de bout en bout.
+
+Le profil de présentation autorise HTTP uniquement vers l’adresse IPv4 privée configurée pour Supabase. Utiliser uniquement des comptes fictifs sur un réseau de confiance.
