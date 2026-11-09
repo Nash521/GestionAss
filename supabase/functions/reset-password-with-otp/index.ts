@@ -4,7 +4,7 @@ import { isStrongPassword } from "../_shared/password.ts";
 
 const phonePattern = /^\+2250[157]\d{8}$/;
 const codePattern = /^\d{6}$/;
-const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type, authorization, apikey" };
+const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-client-info, x-supabase-api-version" };
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { headers, status });
 
 Deno.serve({ port: Number(Deno.env.get("PORT") ?? "8000") }, async (request) => {

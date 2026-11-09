@@ -24,3 +24,6 @@ enabled = true
 account_sid = "AC00000000000000000000000000000000"
 auth_token = "local-development-token"
 message_service_sid = "MG00000000000000000000000000000000"
+
+[functions.jeko-webhook]
+verify_jwt = false

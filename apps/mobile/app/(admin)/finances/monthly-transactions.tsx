@@ -74,7 +74,7 @@ export default function MonthlyTransactions() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1 }, background: { minHeight: "100%" }, backgroundImage: { resizeMode: "cover" }, scroll: { flexGrow: 1 },
+  page: { flex: 1 }, background: { flexGrow: 1, minHeight: "100%" }, backgroundImage: { height: "100%", resizeMode: "cover", width: "100%" }, scroll: { flexGrow: 1 },
   content: { gap: 13, padding: 20, paddingBottom: 112, paddingTop: 116 }, back: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row", gap: 6, paddingVertical: 5 }, backText: { color: "#007D74", fontSize: 13, fontWeight: "700" },
   kicker: { color: "#65758A", fontSize: 13 }, title: { color: "#102B3D", fontSize: 27, fontWeight: "800" }, subtitle: { color: "#65758A", fontSize: 14, lineHeight: 20 },
   list: { gap: 10 }, count: { color: "#65758A", fontSize: 12, fontWeight: "600" }, message: { color: "#65758A", padding: 24, textAlign: "center" }, state: { alignItems: "center", gap: 8 }, action: { color: "#007D74", fontWeight: "800" },

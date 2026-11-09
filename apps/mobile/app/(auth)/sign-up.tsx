@@ -45,10 +45,10 @@ export default function SignUp() {
     setLoading(true);
     setError(null);
     try {
-      const invitation = await invokeRegistrationFunction<{ registrationToken: string }>("validate-registration-invitation", { code: invitationCode.trim(), phone });
-      if (!invitation?.registrationToken) throw new Error("Missing invitation token");
-      registrationFlow.update({ firstName: firstName.trim(), lastName: lastName.trim(), phone, password, invitationToken: invitation.registrationToken });
-      await invokeRegistrationFunction("send-registration-otp", { phone, invitationToken: invitation.registrationToken });
+      const invitation = await invokeRegistrationFunction<{ invitationToken: string }>("validate-registration-invitation", { invitationCode: invitationCode.trim(), phone });
+      if (!invitation?.invitationToken) throw new Error("Missing invitation token");
+      registrationFlow.update({ firstName: firstName.trim(), lastName: lastName.trim(), phone, password, invitationToken: invitation.invitationToken });
+      await invokeRegistrationFunction("send-registration-otp", { phone, invitationToken: invitation.invitationToken });
       router.push("/(auth)/verify-phone");
     } catch {
       setError("Impossible d’envoyer le code. Vérifiez votre invitation et réessayez.");

@@ -4,7 +4,7 @@ const headers = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey, x-client-info, x-supabase-api-version",
 };
 const response = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers });
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

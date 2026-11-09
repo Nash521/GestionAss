@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AUTH_STORAGE_KEY, createAuthStorage } from "./auth-storage";
 
 let client: ReturnType<typeof createClient> | null = null;
 
@@ -12,7 +13,8 @@ export function getSupabaseClient() {
   if (!url || !key) throw new Error("Configuration Supabase manquante.");
   client = createClient(url, key, {
     auth: {
-      storage: AsyncStorage,
+      storage: createAuthStorage(AsyncStorage),
+      storageKey: AUTH_STORAGE_KEY,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,

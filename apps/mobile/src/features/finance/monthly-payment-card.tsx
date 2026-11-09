@@ -62,7 +62,7 @@ export function MonthlyPaymentCard({ item }: { item: MonthlyPaymentTransaction }
             <DetailRow label="Mois concerné" value={formatFinanceDate(item.month)} />
             <DetailRow label="Montant payé" value={money(item.amount)} strong />
             <DetailRow label="Date du paiement" value={formatFinanceDate(item.paidOn)} />
-            <DetailRow label="Mode de paiement" value={item.source === "wave" ? "Wave" : "Espèces"} />
+            <DetailRow label="Mode de paiement" value={item.source === "jeko" ? "Jèko" : item.source === "wave" ? "Wave" : "Espèces"} />
             <DetailRow label="Statut" value={partial ? "Partiel" : "Payé"} />
             {partial && item.remainingAfterPayment !== null
               ? <DetailRow label="Reste à payer" value={money(item.remainingAfterPayment)} warning />
